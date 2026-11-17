@@ -1,0 +1,181 @@
+﻿ETHES TECH  /  ENGINEERING ASSESSMENT
+
+
+  
+ ENGINEERING se@ethes.tech
+1. Project A — Workforce Attendance
+1.1 Studi kasus
+Perusahaan memiliki sekitar 100 karyawan. HR perlu mengetahui siapa yang sudah IN, siapa yang terlambat, siapa yang belum OUT, dan riwayat kehadiran. Buat solusi sederhana: karyawan menggunakan Mobile dan HR memonitor lewat Web.
+1.2 User & fitur wajib
+Role
+	Fitur
+	HR Admin (Web)
+	Login demo, CRUD karyawan, lihat dashboard, daftar/filter absensi,office
+	Employee (Mobile)
+	Login, profil, IN, OUT, status hari ini, riwayat kehadiran,lokasi office
+	
+
+1.3 Business rules yang wajib berjalan
+Kode
+	Aturan
+	Hasil yang diharapkan
+	ATT-01
+	IN pertama pada tanggal kerja
+	Berhasil menyimpan check-in
+	ATT-02
+	IN kedua pada tanggal yang sama
+	Ditolak tanpa duplikasi
+	ATT-03
+	OUT tanpa IN
+	Ditolak
+	ATT-04
+	OUT setelah IN dan belum OUT
+	Berhasil menyimpan check-out
+	ATT-05
+	OUT kedua
+	Ditolak
+	ATT-06
+	Employee melihat data orang lain
+	Tidak diizinkan
+	ATT-07
+	Token hilang/tidak valid
+	HTTP 401; Mobile kembali ke login
+	ATT-08
+	Request gagal/timeout
+	Tampil error; tidak boleh sukses palsu
+	
+
+Aturan simulasi tambahan: jam masuk 08.00 WIB, toleransi 15 menit, lewat 08.15 status TERLAMBAT. Gunakan waktu server dengan zona Asia/Jakarta. Satu pasangan IN/OUT per tanggal kerja; shift malam di luar scope.
+1.4 Spesifikasi data dan API minimum
+Database
+	Field inti
+	users
+	id, employee_id, email (unique), password hash, role
+	employees
+	id, employee_code (unique), name, status
+	attendances
+	id, employee_id, work_date, check_in_at, check_out_at, status; unique employee_id + work_date
+	
+
+Endpoint inti: POST /api/login; GET /api/me; GET/POST/PUT /api/employees; GET /api/attendance/today; POST /api/attendance/check-in; POST /api/attendance/check-out; GET /api/attendance/history; GET /api/dashboard/attendance.
+1.5 Demo wajib Tim A
+1. HR menambahkan karyawan melalui Web.
+2. Karyawan login di Mobile dan berhasil melakukan IN.
+3. Percobaan IN kedua ditolak.
+4. Karyawan melakukan OUT; OUT kedua ditolak.
+5. Riwayat Mobile dan dashboard HR menunjukkan data transaksi yang sama.
+2. Project B — Company Asset Management
+2.1 Studi kasus
+Perusahaan memiliki laptop, smartphone, dan peralatan kantor. Perpindahan aset sering tidak terdokumentasi. Buat sistem untuk menampilkan aset yang tersedia dan mencatat peminjaman serta pengembalian tanpa pencatatan ganda.
+2.2 User & fitur wajib
+Role
+	Fitur
+	Asset Admin (Web)
+	Login demo, CRUD kategori/aset, dashboard dan filter status aset,divisi karyawan, status
+	Employee (Mobile)
+	Login, daftar/detail aset, pinjam, kembalikan, riwayat transaksi
+	
+
+2.3 Business rules yang wajib berjalan
+Kode
+	Aturan
+	Hasil yang diharapkan
+	AST-01
+	Kode aset duplikat
+	Ditolak
+	AST-02
+	Pinjam aset AVAILABLE
+	Berhasil; status BORROWED
+	AST-03
+	Pinjam aset BORROWED
+	Ditolak
+	AST-04
+	Pinjam aset MAINTENANCE
+	Ditolak
+	AST-05
+	Return aset yang sedang dipinjam oleh peminjamnya
+	Berhasil; status AVAILABLE
+	AST-06
+	Return aset yang tidak dipinjam / return kedua
+	Ditolak
+	AST-07
+	Return oleh user lain
+	Ditolak untuk MVP
+	AST-08
+	Dua request peminjaman bersamaan
+	Maksimal satu berhasil
+	AST-09
+	Request timeout/gagal
+	Tampilkan error tanpa sukses palsu
+	
+
+Status aset minimum: AVAILABLE, BORROWED, MAINTENANCE. Untuk MVP, Admin dapat menandai aset yang sedang tersedia menjadi MAINTENANCE secara manual; modul pemeliharaan detail tidak diperlukan. Tidak perlu approval peminjaman.
+2.4 Spesifikasi data dan API minimum
+Database
+	Field inti
+	users
+	id, name, email (unique), password hash, role
+	asset_categories
+	id, name
+	assets
+	id, asset_code (unique), name, category_id, status
+	asset_loans
+	id, asset_id, borrower_id, borrowed_at, returned_at, status
+	
+
+Endpoint inti: POST /api/login; GET /api/me; GET /api/asset-categories; GET/POST/PUT /api/assets; GET /api/assets/{id}; POST /api/asset-loans; POST /api/asset-loans/{id}/return; GET /api/asset-loans/history; GET /api/dashboard/assets.
+Gunakan database transaction dan mekanisme locking/constraint yang sesuai untuk mencegah dua peminjaman aktif atas aset yang sama.
+2.5 Demo wajib Tim B
+6. Admin menambahkan kategori dan aset melalui Web.
+7. Employee melihat aset AVAILABLE pada Mobile.
+8. Employee meminjam aset; status berubah menjadi BORROWED.
+9. Peminjaman kedua ditolak.
+10. Employee mengembalikan aset; status AVAILABLE dan riwayat serta dashboard diperbarui.
+3. Standar engineering bersama
+Aspek
+	Kewajiban
+	Web
+	CRUD master, dashboard sederhana, daftar/filter; data berasal dari backend nyata
+	Mobile
+	Login, transaksi, riwayat, loading/error/empty state
+	REST API
+	JSON response konsisten, validasi di server, authorization sesuai role
+	Database
+	MySQL, migrations, seeder, FK, unique constraint dan integritas transaksi
+	Security
+	Password hash, credential demo bukan produksi, jangan commit .env
+	Scope tidak wajib
+	GPS, geofencing, kamera, QR, notification, export, production deployment, depreciation
+	
+
+Format response yang disepakati per tim harus konsisten, misalnya: {"success": true, "message": "...", "data": {...}, "error": null}. Gunakan HTTP 401 untuk belum login, 403 untuk akses tidak sah, 422 untuk input invalid, dan 409 untuk konflik aturan bisnis.
+4. Repository, workflow, dan kontribusi
+Repository Tim A: internship-attendance-system. Repository Tim B: internship-asset-management.
+Masing-masing repository wajib mempunyai folder backend/, mobile/, docs/ dan README.md. Sertakan migration/seed, API contract, ERD, requirement, test cases, dan hasil UAT.
+11. Setiap peserta mendapat minimal satu GitHub Issue dengan owner dan acceptance criteria.
+12. Kerjakan pada feature branch, contoh feature/ATT-02-check-in atau feature/AST-05-loan.
+13. Buat Pull Request ke develop, bukan langsung ke main.
+14. PR harus berisi perubahan, cara testing, bukti hasil, dan ringkasan penggunaan AI.
+15. Review oleh mentor atau reviewer yang ditunjuk sebelum merge.
+16. Analyst menyimpan kontribusi requirement, diagram, test cases, dan evidence UAT di docs/.
+5. Mandatory testing & error challenge
+Tim A — test minimal
+	Tim B — test minimal
+	IN berhasil
+	Peminjaman aset AVAILABLE berhasil
+	IN kedua ditolak
+	Aset BORROWED tidak bisa dipinjam lagi
+	OUT tanpa IN ditolak
+	Return aset tanpa peminjaman ditolak
+	Riwayat/dashboard konsisten
+	Riwayat/dashboard konsisten
+	API gagal tidak sukses palsu
+	Request gagal tidak sukses palsu
+	
+
+Setiap peserta programmer wajib menampilkan minimal satu negative/error scenario pada modul sendiri. Analyst mengumpulkan test case berisi langkah, expected result, actual result, pass/fail, bukti, serta defect yang ditemukan.
+
+
+
+
+INTERNAL BRIEFING  •  17–19 NOVEMBER 2026  •  ETHES TECH
