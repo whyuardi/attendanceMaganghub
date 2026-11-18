@@ -12,10 +12,11 @@ class MockOfficeRepository implements OfficeRepository {
 
     return const Office(
       id: 1,
-      name: 'Kantor Pusat',
+      name: 'Ethes Tech (Kantor Pusat)',
       address: 'Krajan 1 Kandangan, 001/007, Krajan, Kandangan, Temanggung Regency, Central Java 56281',
-      latitude: -7.254870,
-      longitude: 110.185027,
+      latitude: -7.2547327062062426,
+      longitude: 110.1850411247732,
+      radiusM: 15,
     );
   }
 }

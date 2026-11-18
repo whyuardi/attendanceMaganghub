@@ -6,8 +6,8 @@ import '../error/app_error.dart';
 
 class LocationService {
   // Target office coordinates
-  static const double officeLatitude = -7.254870;
-  static const double officeLongitude = 110.185027;
+  static const double officeLatitude = -7.2547327062062426;
+  static const double officeLongitude = 110.1850411247732;
   static const double maxRadiusMeters = 15.0;
 
   // Custom mock position for testing or simulation

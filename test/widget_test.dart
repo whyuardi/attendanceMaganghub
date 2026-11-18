@@ -322,21 +322,21 @@ void main() {
       storage = TokenStorage.inMemory('mock_sanctum_token_1');
     });
 
-    test('Distance at exact office coordinate (-7.254870, 110.185027) is 0m', () {
+    test('Distance at exact office coordinate is 0m', () {
       final distance = LocationService.calculateDistance(
-        -7.254870,
-        110.185027,
+        LocationService.officeLatitude,
+        LocationService.officeLongitude,
         LocationService.officeLatitude,
         LocationService.officeLongitude,
       );
       expect(distance, closeTo(0.0, 0.01));
-      expect(LocationService.isWithinRadius(-7.254870, 110.185027), isTrue);
+      expect(LocationService.isWithinRadius(LocationService.officeLatitude, LocationService.officeLongitude), isTrue);
     });
 
     test('Distance within 15m radius (e.g. ~5.5m) is valid', () {
       // 0.00005 deg latitude offset is roughly 5.5 meters
-      final latWithin = -7.254870 + 0.00005;
-      final lngWithin = 110.185027;
+      final latWithin = LocationService.officeLatitude + 0.00005;
+      final lngWithin = LocationService.officeLongitude;
       final distance = LocationService.calculateDistance(
         latWithin,
         lngWithin,
@@ -349,8 +349,8 @@ void main() {
 
     test('Distance outside 15m radius (e.g. ~55m away) is invalid', () {
       // 0.0005 deg offset is roughly 55 meters
-      final latOutside = -7.254870 + 0.0005;
-      final lngOutside = 110.185027;
+      final latOutside = LocationService.officeLatitude + 0.0005;
+      final lngOutside = LocationService.officeLongitude;
       final distance = LocationService.calculateDistance(
         latOutside,
         lngOutside,
@@ -369,8 +369,8 @@ void main() {
         delay: Duration.zero,
       );
 
-      final latFar = -7.254870 + 0.001; // ~111m away
-      final lngFar = 110.185027;
+      final latFar = LocationService.officeLatitude + 0.001; // ~111m away
+      final lngFar = LocationService.officeLongitude;
 
       expect(
         () async => await repo.checkIn(latitude: latFar, longitude: lngFar),
@@ -391,8 +391,8 @@ void main() {
       );
 
       // Within 5 meters of office
-      final latClose = -7.254870 + 0.00004;
-      final lngClose = 110.185027;
+      final latClose = LocationService.officeLatitude + 0.00004;
+      final lngClose = LocationService.officeLongitude;
 
       final result = await repo.checkIn(latitude: latClose, longitude: lngClose);
       expect(result.workDate, '2026-11-16');
@@ -418,8 +418,8 @@ void main() {
 
       // Try checking out outside 15m
       currentTime = outTime;
-      final latFar = -7.254870 + 0.001;
-      final lngFar = 110.185027;
+      final latFar = LocationService.officeLatitude + 0.001;
+      final lngFar = LocationService.officeLongitude;
 
       expect(
         () async => await repo.checkOut(latitude: latFar, longitude: lngFar),

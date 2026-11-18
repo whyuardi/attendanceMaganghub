@@ -14,7 +14,7 @@ import '../providers/office_provider.dart';
 class OfficeScreen extends ConsumerWidget {
   const OfficeScreen({super.key});
 
-  static const String googleMapsUrl = 'https://maps.app.goo.gl/YEE5ggerC5V17GUs7';
+  static const String googleMapsUrl = 'https://maps.app.goo.gl/KGzZ2RMMp1i2Gnuf6';
 
   Future<void> _openMaps() async {
     final uri = Uri.parse(googleMapsUrl);
