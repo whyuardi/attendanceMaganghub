@@ -24,6 +24,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = ref.read(authNotifierProvider).user;
+      if (user == null || user.name.trim().isEmpty) {
+        ref.read(authNotifierProvider.notifier).checkAuthStatus();
+      }
+    });
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
         setState(() {
@@ -67,7 +73,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final todayNotifier = ref.read(todayAttendanceProvider.notifier);
 
     final user = authState.user;
-    final firstName = user?.name.split(' ').first ?? 'Karyawan';
+    final String firstName;
+    if (user != null && user.name.trim().isNotEmpty) {
+      firstName = user.name.trim().split(' ').first;
+    } else if (user != null && user.email.isNotEmpty) {
+      firstName = user.email.split('@').first;
+    } else {
+      firstName = 'Karyawan';
+    }
 
     if (todayState.isLoading && todayState.attendance == null) {
       return const Scaffold(

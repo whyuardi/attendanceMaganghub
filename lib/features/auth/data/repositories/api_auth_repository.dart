@@ -27,8 +27,13 @@ class ApiAuthRepository implements AuthRepository {
         await tokenStorage.saveToken(token.toString());
       }
 
-      final userData = data['user'] ?? data['data']?['user'] ?? data['data'] ?? data;
-      return User.fromJson(Map<String, dynamic>.from(userData as Map));
+      // Ambil data profil lengkap (/api/me) agar nama & kode karyawan dari tabel employees terisi
+      try {
+        return await getMe();
+      } catch (_) {
+        final userData = data['user'] ?? data['data']?['user'] ?? data['data'] ?? data;
+        return User.fromJson(Map<String, dynamic>.from(userData as Map));
+      }
     } catch (e) {
       throw mapDioExceptionToAppError(e);
     }
