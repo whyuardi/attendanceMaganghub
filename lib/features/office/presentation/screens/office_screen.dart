@@ -12,8 +12,10 @@ import '../providers/office_provider.dart';
 class OfficeScreen extends ConsumerWidget {
   const OfficeScreen({super.key});
 
-  Future<void> _openMaps(double lat, double lng) async {
-    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+  static const String googleMapsUrl = 'https://maps.app.goo.gl/YEE5ggerC5V17GUs7';
+
+  Future<void> _openMaps() async {
+    final uri = Uri.parse(googleMapsUrl);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -51,11 +53,11 @@ class OfficeScreen extends ConsumerWidget {
                     // 1. Gambaran Peta / Map Preview Card
                     _OfficeMapPreview(
                       office: office,
-                      onTap: () => _openMaps(office.latitude, office.longitude),
+                      onTap: _openMaps,
                     ),
                     const SizedBox(height: 24),
 
-                    // 2. Info Card (Radius 24, Minimalist Coinbase Style)
+                    // 2. Info Card (Clean Minimalist Coinbase Style, no radius badge)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
@@ -67,42 +69,9 @@ class OfficeScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  office.name,
-                                  style: AppTypography.itemTitle.copyWith(fontSize: 18),
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: AppColors.gray100,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.radar,
-                                      size: 14,
-                                      color: AppColors.blue,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Radius ${office.radiusM} m',
-                                      style: AppTypography.monoSecondary.copyWith(
-                                        fontSize: 12,
-                                        color: AppColors.black,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                          Text(
+                            office.name,
+                            style: AppTypography.itemTitle.copyWith(fontSize: 18),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -140,10 +109,10 @@ class OfficeScreen extends ConsumerWidget {
 
                     const SizedBox(height: 32),
 
-                    // 3. Action Button
+                    // 3. Action Button -> Google Maps Intent
                     AppButton(
                       text: 'Buka di Google Maps',
-                      onPressed: () => _openMaps(office.latitude, office.longitude),
+                      onPressed: _openMaps,
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -168,8 +137,10 @@ class _OfficeMapPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lat = office.latitude;
+    final lng = office.longitude;
     final mapUrl =
-        'https://staticmap.openstreetmap.de/staticmap.php?center=${office.latitude},${office.longitude}&zoom=17&size=680x380&maptype=mapnik';
+        'https://staticmap.openstreetmap.de/staticmap.php?center=$lat,$lng&zoom=17&size=680x380&maptype=mapnik';
 
     return GestureDetector(
       onTap: onTap,
@@ -196,17 +167,6 @@ class _OfficeMapPreview extends StatelessWidget {
                 if (progress == null) return child;
                 return _buildFallbackVectorMap();
               },
-            ),
-
-            // Geofence Radius Circle Indicator
-            Container(
-              width: 90,
-              height: 90,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.blue.withValues(alpha: 0.18),
-                border: Border.all(color: AppColors.blue, width: 2),
-              ),
             ),
 
             // Office Center Pin Marker
@@ -291,7 +251,7 @@ class _OfficeMapPreview extends StatelessWidget {
                     const Icon(Icons.open_in_new, size: 12, color: AppColors.white),
                     const SizedBox(width: 4),
                     Text(
-                      'Ketuk untuk rute',
+                      'Buka di Google Maps',
                       style: AppTypography.itemTitle.copyWith(
                         color: AppColors.white,
                         fontSize: 11,
