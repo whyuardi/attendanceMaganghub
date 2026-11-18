@@ -43,10 +43,11 @@ class ApiAttendanceRepository implements AttendanceRepository {
   }
 
   @override
-  Future<Attendance> checkIn({double? latitude, double? longitude}) async {
+  Future<Attendance> checkIn({double? latitude, double? longitude, Uint8List? photoBytes}) async {
     try {
       final lat = latitude ?? LocationService.officeLatitude;
       final lng = longitude ?? LocationService.officeLongitude;
+      final bytes = photoBytes ?? _defaultPhotoBytes;
 
       // Backend menggunakan multer upload (field 'photo', 'lat', 'lng')
       final formData = FormData.fromMap({
@@ -55,7 +56,7 @@ class ApiAttendanceRepository implements AttendanceRepository {
         'latitude': lat,
         'longitude': lng,
         'photo': MultipartFile.fromBytes(
-          _defaultPhotoBytes,
+          bytes,
           filename: 'photo.jpg',
           contentType: DioMediaType('image', 'jpeg'),
         ),
@@ -74,10 +75,11 @@ class ApiAttendanceRepository implements AttendanceRepository {
   }
 
   @override
-  Future<Attendance> checkOut({double? latitude, double? longitude}) async {
+  Future<Attendance> checkOut({double? latitude, double? longitude, Uint8List? photoBytes}) async {
     try {
       final lat = latitude ?? LocationService.officeLatitude;
       final lng = longitude ?? LocationService.officeLongitude;
+      final bytes = photoBytes ?? _defaultPhotoBytes;
 
       final formData = FormData.fromMap({
         'lat': lat,
@@ -85,7 +87,7 @@ class ApiAttendanceRepository implements AttendanceRepository {
         'latitude': lat,
         'longitude': lng,
         'photo': MultipartFile.fromBytes(
-          _defaultPhotoBytes,
+          bytes,
           filename: 'photo.jpg',
           contentType: DioMediaType('image', 'jpeg'),
         ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/app_button.dart';
@@ -93,6 +94,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final hasCheckedIn = attendance?.checkInAt != null;
     final hasCheckedOut = attendance?.checkOutAt != null;
 
+    // Helper method to capture photo from camera and submit attendance
+    Future<void> performAttendanceWithCamera(bool isCheckIn) async {
+      try {
+        final picker = ImagePicker();
+        final pickedFile = await picker.pickImage(
+          source: ImageSource.camera,
+          preferredCameraDevice: CameraDevice.front,
+          imageQuality: 80,
+          maxWidth: 1024,
+          maxHeight: 1024,
+        );
+
+        if (pickedFile == null) {
+          // Pengguna membatalkan pengambilan foto kamera
+          return;
+        }
+
+        final photoBytes = await pickedFile.readAsBytes();
+        final success = isCheckIn
+            ? await todayNotifier.checkIn(photoBytes: photoBytes)
+            : await todayNotifier.checkOut(photoBytes: photoBytes);
+
+        if (success) {
+          ref.invalidate(attendanceHistoryProvider);
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Kamera tidak dapat diakses: $e')),
+          );
+        }
+      }
+    }
+
     // Determine button label and action
     final String buttonText;
     final VoidCallback? buttonAction;
@@ -100,21 +135,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     if (!hasCheckedIn) {
       buttonText = 'Absen masuk';
-      buttonAction = () async {
-        final success = await todayNotifier.checkIn();
-        if (success) {
-          ref.invalidate(attendanceHistoryProvider);
-        }
-      };
+      buttonAction = () => performAttendanceWithCamera(true);
       isButtonDisabled = false;
     } else if (!hasCheckedOut) {
       buttonText = 'Absen pulang';
-      buttonAction = () async {
-        final success = await todayNotifier.checkOut();
-        if (success) {
-          ref.invalidate(attendanceHistoryProvider);
-        }
-      };
+      buttonAction = () => performAttendanceWithCamera(false);
       isButtonDisabled = false;
     } else {
       // Both IN and OUT completed

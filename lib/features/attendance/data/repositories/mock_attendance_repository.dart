@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import '../../../../core/error/app_error.dart';
 import '../../../../core/location/location_service.dart';
 import '../../../../core/storage/token_storage.dart';
@@ -139,7 +140,7 @@ class MockAttendanceRepository implements AttendanceRepository {
   }
 
   @override
-  Future<Attendance> checkIn({double? latitude, double? longitude}) async {
+  Future<Attendance> checkIn({double? latitude, double? longitude, Uint8List? photoBytes}) async {
     await Future.delayed(delay);
 
     if (simulateTimeout) {
@@ -192,7 +193,7 @@ class MockAttendanceRepository implements AttendanceRepository {
   }
 
   @override
-  Future<Attendance> checkOut({double? latitude, double? longitude}) async {
+  Future<Attendance> checkOut({double? latitude, double? longitude, Uint8List? photoBytes}) async {
     await Future.delayed(delay);
 
     if (simulateTimeout) {

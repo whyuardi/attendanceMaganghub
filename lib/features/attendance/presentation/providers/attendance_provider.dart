@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/location/location_service.dart';
@@ -79,7 +80,7 @@ class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
     }
   }
 
-  Future<bool> checkIn({double? latitude, double? longitude}) async {
+  Future<bool> checkIn({double? latitude, double? longitude, Uint8List? photoBytes}) async {
     state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
     try {
       final double lat;
@@ -93,7 +94,11 @@ class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
         lng = pos.longitude;
       }
 
-      final result = await _repository.checkIn(latitude: lat, longitude: lng);
+      final result = await _repository.checkIn(
+        latitude: lat,
+        longitude: lng,
+        photoBytes: photoBytes,
+      );
       // ATT-01: Simpan status dan tampilkan jam
       state = state.copyWith(
         isSubmitting: false,
@@ -111,7 +116,7 @@ class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
     }
   }
 
-  Future<bool> checkOut({double? latitude, double? longitude}) async {
+  Future<bool> checkOut({double? latitude, double? longitude, Uint8List? photoBytes}) async {
     state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
     try {
       final double lat;
@@ -125,7 +130,11 @@ class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
         lng = pos.longitude;
       }
 
-      final result = await _repository.checkOut(latitude: lat, longitude: lng);
+      final result = await _repository.checkOut(
+        latitude: lat,
+        longitude: lng,
+        photoBytes: photoBytes,
+      );
       // ATT-04: Simpan status check-out
       state = state.copyWith(
         isSubmitting: false,

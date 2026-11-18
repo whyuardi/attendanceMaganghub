@@ -21,7 +21,10 @@ class Attendance {
     DateTime? parseDate(dynamic value) {
       if (value == null) return null;
       if (value is String) {
-        return DateTime.tryParse(value);
+        final parsed = DateTime.tryParse(value);
+        if (parsed != null) {
+          return parsed.toLocal();
+        }
       }
       return null;
     }
@@ -71,18 +74,20 @@ class Attendance {
     }
   }
 
-  /// Formatted time e.g. "07.52" or "--.--"
+  /// Formatted time e.g. "07.52" or "--.--" in local timezone (WIB)
   String get formattedCheckIn {
     if (checkInAt == null) return '--.--';
-    final hour = checkInAt!.hour.toString().padLeft(2, '0');
-    final minute = checkInAt!.minute.toString().padLeft(2, '0');
+    final dt = checkInAt!.toLocal();
+    final hour = dt.hour.toString().padLeft(2, '0');
+    final minute = dt.minute.toString().padLeft(2, '0');
     return '$hour.$minute';
   }
 
   String get formattedCheckOut {
     if (checkOutAt == null) return '--.--';
-    final hour = checkOutAt!.hour.toString().padLeft(2, '0');
-    final minute = checkOutAt!.minute.toString().padLeft(2, '0');
+    final dt = checkOutAt!.toLocal();
+    final hour = dt.hour.toString().padLeft(2, '0');
+    final minute = dt.minute.toString().padLeft(2, '0');
     return '$hour.$minute';
   }
 
