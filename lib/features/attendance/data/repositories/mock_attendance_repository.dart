@@ -1,4 +1,5 @@
 import '../../../../core/error/app_error.dart';
+import '../../../../core/location/location_service.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../models/attendance.dart';
 import 'attendance_repository.dart';
@@ -117,14 +118,37 @@ class MockAttendanceRepository implements AttendanceRepository {
     }
   }
 
+  void _validateLocationRadius(double? lat, double? lng) {
+    if (lat == null && lng == null) return; // If omitted in test/mock, skip or assume within office
+    final userLat = lat ?? LocationService.officeLatitude;
+    final userLng = lng ?? LocationService.officeLongitude;
+    final distance = LocationService.calculateDistance(
+      userLat,
+      userLng,
+      LocationService.officeLatitude,
+      LocationService.officeLongitude,
+    );
+    if (distance > LocationService.maxRadiusMeters) {
+      final distStr = distance >= 1000
+          ? '${(distance / 1000).toStringAsFixed(1)} km'
+          : '${distance.toStringAsFixed(1)} m';
+      throw ValidationError(
+        'Kamu berada di luar radius kantor ($distStr). Absen hanya dapat dilakukan dalam radius maksimal 15 m',
+      );
+    }
+  }
+
   @override
-  Future<Attendance> checkIn() async {
+  Future<Attendance> checkIn({double? latitude, double? longitude}) async {
     await Future.delayed(delay);
 
     if (simulateTimeout) {
       // ATT-08
       throw const NetworkError();
     }
+
+    // Validasi radius lokasi (maksimal 15 meter)
+    _validateLocationRadius(latitude, longitude);
 
     final employeeId = await _getCurrentEmployeeId();
     final now = clock();
@@ -168,13 +192,16 @@ class MockAttendanceRepository implements AttendanceRepository {
   }
 
   @override
-  Future<Attendance> checkOut() async {
+  Future<Attendance> checkOut({double? latitude, double? longitude}) async {
     await Future.delayed(delay);
 
     if (simulateTimeout) {
       // ATT-08
       throw const NetworkError();
     }
+
+    // Validasi radius lokasi (maksimal 15 meter)
+    _validateLocationRadius(latitude, longitude);
 
     final employeeId = await _getCurrentEmployeeId();
     final now = clock();

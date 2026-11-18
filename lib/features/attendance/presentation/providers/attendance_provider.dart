@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/config/app_config.dart';
+import '../../../../core/location/location_service.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../../data/models/attendance.dart';
@@ -53,8 +54,12 @@ class TodayAttendanceState {
 
 class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
   final AttendanceRepository _repository;
+  final LocationService _locationService;
 
-  TodayAttendanceNotifier(this._repository) : super(const TodayAttendanceState(isLoading: true)) {
+  TodayAttendanceNotifier(
+    this._repository,
+    this._locationService,
+  ) : super(const TodayAttendanceState(isLoading: true)) {
     loadToday();
   }
 
@@ -74,10 +79,21 @@ class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
     }
   }
 
-  Future<bool> checkIn() async {
+  Future<bool> checkIn({double? latitude, double? longitude}) async {
     state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
     try {
-      final result = await _repository.checkIn();
+      final double lat;
+      final double lng;
+      if (latitude != null && longitude != null) {
+        lat = latitude;
+        lng = longitude;
+      } else {
+        final pos = await _locationService.getCurrentPosition();
+        lat = pos.latitude;
+        lng = pos.longitude;
+      }
+
+      final result = await _repository.checkIn(latitude: lat, longitude: lng);
       // ATT-01: Simpan status dan tampilkan jam
       state = state.copyWith(
         isSubmitting: false,
@@ -95,10 +111,21 @@ class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
     }
   }
 
-  Future<bool> checkOut() async {
+  Future<bool> checkOut({double? latitude, double? longitude}) async {
     state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
     try {
-      final result = await _repository.checkOut();
+      final double lat;
+      final double lng;
+      if (latitude != null && longitude != null) {
+        lat = latitude;
+        lng = longitude;
+      } else {
+        final pos = await _locationService.getCurrentPosition();
+        lat = pos.latitude;
+        lng = pos.longitude;
+      }
+
+      final result = await _repository.checkOut(latitude: lat, longitude: lng);
       // ATT-04: Simpan status check-out
       state = state.copyWith(
         isSubmitting: false,
@@ -124,7 +151,8 @@ class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
 final todayAttendanceProvider =
     StateNotifierProvider<TodayAttendanceNotifier, TodayAttendanceState>((ref) {
   final repo = ref.watch(attendanceRepositoryProvider);
-  return TodayAttendanceNotifier(repo);
+  final locationService = ref.watch(locationServiceProvider);
+  return TodayAttendanceNotifier(repo, locationService);
 });
 
 final attendanceHistoryProvider =

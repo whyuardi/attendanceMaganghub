@@ -13,9 +13,9 @@ class MockOfficeRepository implements OfficeRepository {
     return const Office(
       id: 1,
       name: 'Ethes Tech Office',
-      address: 'Jl. Kaliurang Km 5.5, Caturtunggal, Depok, Sleman, D.I. Yogyakarta 55281',
-      latitude: -7.755400,
-      longitude: 110.380900,
+      address: 'Jl. Raya Temanggung, Kranggan, Temanggung, Jawa Tengah 56271',
+      latitude: -7.254870,
+      longitude: 110.185027,
     );
   }
 }

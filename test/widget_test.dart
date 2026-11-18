@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:attendance/core/error/app_error.dart';
+import 'package:attendance/core/location/location_service.dart';
 import 'package:attendance/core/storage/token_storage.dart';
 import 'package:attendance/features/attendance/data/models/attendance.dart';
 import 'package:attendance/features/attendance/data/repositories/mock_attendance_repository.dart';
@@ -311,6 +312,151 @@ void main() {
       final result = await repo.checkOut();
       expect(result.checkOutAt, saturdayValidOut);
       expect(result.formattedCheckOut, '16.00');
+    });
+  });
+
+  group('Office Geofencing / 15m Radius Validation', () {
+    late TokenStorage storage;
+
+    setUp(() {
+      storage = TokenStorage.inMemory('mock_sanctum_token_1');
+    });
+
+    test('Distance at exact office coordinate (-7.254870, 110.185027) is 0m', () {
+      final distance = LocationService.calculateDistance(
+        -7.254870,
+        110.185027,
+        LocationService.officeLatitude,
+        LocationService.officeLongitude,
+      );
+      expect(distance, closeTo(0.0, 0.01));
+      expect(LocationService.isWithinRadius(-7.254870, 110.185027), isTrue);
+    });
+
+    test('Distance within 15m radius (e.g. ~5.5m) is valid', () {
+      // 0.00005 deg latitude offset is roughly 5.5 meters
+      final latWithin = -7.254870 + 0.00005;
+      final lngWithin = 110.185027;
+      final distance = LocationService.calculateDistance(
+        latWithin,
+        lngWithin,
+        LocationService.officeLatitude,
+        LocationService.officeLongitude,
+      );
+      expect(distance, lessThanOrEqualTo(15.0));
+      expect(LocationService.isWithinRadius(latWithin, lngWithin), isTrue);
+    });
+
+    test('Distance outside 15m radius (e.g. ~55m away) is invalid', () {
+      // 0.0005 deg offset is roughly 55 meters
+      final latOutside = -7.254870 + 0.0005;
+      final lngOutside = 110.185027;
+      final distance = LocationService.calculateDistance(
+        latOutside,
+        lngOutside,
+        LocationService.officeLatitude,
+        LocationService.officeLongitude,
+      );
+      expect(distance, greaterThan(15.0));
+      expect(LocationService.isWithinRadius(latOutside, lngOutside), isFalse);
+    });
+
+    test('Check-in outside 15m radius is rejected with ValidationError', () async {
+      final workdayTime = DateTime(2026, 11, 16, 8, 5, 0); // Monday 08:05
+      final repo = MockAttendanceRepository(
+        tokenStorage: storage,
+        clock: () => workdayTime,
+        delay: Duration.zero,
+      );
+
+      final latFar = -7.254870 + 0.001; // ~111m away
+      final lngFar = 110.185027;
+
+      expect(
+        () async => await repo.checkIn(latitude: latFar, longitude: lngFar),
+        throwsA(isA<ValidationError>().having(
+          (e) => e.message,
+          'message',
+          contains('Kamu berada di luar radius kantor'),
+        )),
+      );
+    });
+
+    test('Check-in within 15m radius succeeds', () async {
+      final workdayTime = DateTime(2026, 11, 16, 8, 5, 0); // Monday 08:05
+      final repo = MockAttendanceRepository(
+        tokenStorage: storage,
+        clock: () => workdayTime,
+        delay: Duration.zero,
+      );
+
+      // Within 5 meters of office
+      final latClose = -7.254870 + 0.00004;
+      final lngClose = 110.185027;
+
+      final result = await repo.checkIn(latitude: latClose, longitude: lngClose);
+      expect(result.workDate, '2026-11-16');
+      expect(result.checkInAt, workdayTime);
+    });
+
+    test('Check-out outside 15m radius is rejected with ValidationError', () async {
+      final inTime = DateTime(2026, 11, 16, 8, 0, 0);
+      final outTime = DateTime(2026, 11, 16, 17, 5, 0);
+
+      DateTime currentTime = inTime;
+      final repo = MockAttendanceRepository(
+        tokenStorage: storage,
+        clock: () => currentTime,
+        delay: Duration.zero,
+      );
+
+      // Check-in inside office
+      await repo.checkIn(
+        latitude: LocationService.officeLatitude,
+        longitude: LocationService.officeLongitude,
+      );
+
+      // Try checking out outside 15m
+      currentTime = outTime;
+      final latFar = -7.254870 + 0.001;
+      final lngFar = 110.185027;
+
+      expect(
+        () async => await repo.checkOut(latitude: latFar, longitude: lngFar),
+        throwsA(isA<ValidationError>().having(
+          (e) => e.message,
+          'message',
+          contains('Kamu berada di luar radius kantor'),
+        )),
+      );
+    });
+
+    test('Check-out within 15m radius succeeds', () async {
+      final inTime = DateTime(2026, 11, 16, 8, 0, 0);
+      final outTime = DateTime(2026, 11, 16, 17, 5, 0);
+
+      DateTime currentTime = inTime;
+      final repo = MockAttendanceRepository(
+        tokenStorage: storage,
+        clock: () => currentTime,
+        delay: Duration.zero,
+      );
+
+      // Check-in inside office
+      await repo.checkIn(
+        latitude: LocationService.officeLatitude,
+        longitude: LocationService.officeLongitude,
+      );
+
+      // Check-out inside office
+      currentTime = outTime;
+      final result = await repo.checkOut(
+        latitude: LocationService.officeLatitude,
+        longitude: LocationService.officeLongitude,
+      );
+
+      expect(result.checkOutAt, outTime);
+      expect(result.formattedCheckOut, '17.05');
     });
   });
 }
