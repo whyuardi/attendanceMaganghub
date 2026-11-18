@@ -174,7 +174,7 @@ class _OfficeMapPreview extends StatelessWidget {
                     point: location,
                     width: 48,
                     height: 54,
-                    alignment: Alignment.topCenter,
+                    alignment: Alignment.bottomCenter,
                     child: GestureDetector(
                       onTap: onTap,
                       child: Column(
