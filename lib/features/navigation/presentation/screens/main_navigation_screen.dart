@@ -18,27 +18,33 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final List<Widget> _screens = const [
     HomeScreen(),
     HistoryScreen(),
-    ProfileScreen(),
     OfficeScreen(),
+    ProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AppColors.white,
-          border: Border(
-            top: BorderSide(color: AppColors.gray100, width: 0.5),
-          ),
+          border: Border(top: BorderSide(color: AppColors.gray100, width: 0.5)),
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
+          iconSize: 26,
+          selectedItemColor: AppColors.sidebarBg,
+          unselectedItemColor: AppColors.textMuted,
+          selectedLabelStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
+          ),
           onTap: (index) {
             setState(() {
               _currentIndex = index;
@@ -56,14 +62,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               label: 'Riwayat',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profil',
-            ),
-            BottomNavigationBarItem(
               icon: Icon(Icons.business_outlined),
               activeIcon: Icon(Icons.business),
               label: 'Kantor',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Profil',
             ),
           ],
         ),

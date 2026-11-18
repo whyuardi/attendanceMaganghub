@@ -13,126 +13,119 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  // --- Controllers ---
+  static const _holdDuration = Duration(seconds: 3);
+
   late final AnimationController _entranceController;
   late final AnimationController _exitController;
 
-  // --- Entrance animations ---
-  late final Animation<double> _dotScale;
-  late final Animation<double> _dotOpacity;
+  late final Animation<double> _logoOpacity;
+  late final Animation<double> _logoScale;
   late final Animation<double> _titleOpacity;
   late final Animation<Offset> _titleSlide;
   late final Animation<double> _subtitleOpacity;
   late final Animation<Offset> _subtitleSlide;
   late final Animation<double> _lineWidth;
-
-  // --- Exit animations ---
   late final Animation<double> _exitOpacity;
   late final Animation<double> _exitScale;
+
+  bool _isExiting = false;
+  bool _completionSent = false;
 
   @override
   void initState() {
     super.initState();
 
-    // Entrance: 1800ms total
     _entranceController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
     );
-
-    // Exit: 500ms
     _exitController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
 
-    // ── Phase 1: Blue dot appears (0% → 35%)
-    _dotScale = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _logoOpacity = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _entranceController,
-        curve: const Interval(0.0, 0.35, curve: Curves.elasticOut),
+        curve: const Interval(0, 0.3, curve: Curves.easeOut),
       ),
     );
-    _dotOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _logoScale = Tween<double>(begin: 0.82, end: 1).animate(
       CurvedAnimation(
         parent: _entranceController,
-        curve: const Interval(0.0, 0.15, curve: Curves.easeOut),
+        curve: const Interval(0, 0.5, curve: Curves.easeOutBack),
       ),
     );
-
-    // ── Phase 2: "Workforce" text fades in + slides up (20% → 55%)
-    _titleOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _titleOpacity = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _entranceController,
-        curve: const Interval(0.20, 0.55, curve: Curves.easeOut),
+        curve: const Interval(0.3, 0.65, curve: Curves.easeOut),
       ),
     );
-    _titleSlide = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
+    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.3, 0.65, curve: Curves.easeOutCubic),
+          ),
+        );
+    _subtitleOpacity = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _entranceController,
-        curve: const Interval(0.20, 0.55, curve: Curves.easeOutCubic),
+        curve: const Interval(0.4, 0.7, curve: Curves.easeOut),
       ),
     );
-
-    // ── Phase 3: "Attendance" text fades in + slides up (35% → 65%)
-    _subtitleOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0.35, 0.65, curve: Curves.easeOut),
-      ),
-    );
-    _subtitleSlide = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0.35, 0.65, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    // ── Phase 4: Accent line draws in (55% → 85%)
-    _lineWidth = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _subtitleSlide =
+        Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.4, 0.7, curve: Curves.easeOutCubic),
+          ),
+        );
+    _lineWidth = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _entranceController,
         curve: const Interval(0.55, 0.85, curve: Curves.easeInOutCubic),
       ),
     );
-
-    // ── Exit
-    _exitOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _exitController,
-        curve: Curves.easeInCubic,
-      ),
+    _exitOpacity = Tween<double>(begin: 1, end: 0).animate(
+      CurvedAnimation(parent: _exitController, curve: Curves.easeInCubic),
     );
-    _exitScale = Tween<double>(begin: 1.0, end: 0.96).animate(
-      CurvedAnimation(
-        parent: _exitController,
-        curve: Curves.easeInCubic,
-      ),
+    _exitScale = Tween<double>(begin: 1, end: 0.96).animate(
+      CurvedAnimation(parent: _exitController, curve: Curves.easeInCubic),
     );
 
     _startSequence();
   }
 
   Future<void> _startSequence() async {
-    // Play entrance
-    await _entranceController.forward();
+    try {
+      await _entranceController.forward();
+      if (!mounted || _isExiting) return;
 
-    // Hold for a beat
-    await Future.delayed(const Duration(milliseconds: 600));
+      await Future.delayed(_holdDuration);
+      if (!mounted || _isExiting) return;
 
-    // Play exit
-    await _exitController.forward();
-
-    // Notify parent
-    if (mounted) {
-      widget.onComplete();
+      await _finishSplash();
+    } on TickerCanceled {
+      // The entrance animation is canceled when the user skips the splash.
     }
+  }
+
+  Future<void> _finishSplash() async {
+    if (_isExiting || _completionSent) return;
+    _isExiting = true;
+    _entranceController.stop();
+
+    try {
+      await _exitController.forward();
+    } on TickerCanceled {
+      return;
+    }
+    if (!mounted || _completionSent) return;
+
+    _completionSent = true;
+    widget.onComplete();
   }
 
   @override
@@ -145,7 +138,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.sidebarBg,
       body: AnimatedBuilder(
         animation: Listenable.merge([_entranceController, _exitController]),
         builder: (context, _) {
@@ -153,77 +146,137 @@ class _SplashScreenState extends State<SplashScreen>
             opacity: _exitOpacity,
             child: ScaleTransition(
               scale: _exitScale,
-              child: Center(
+              child: SafeArea(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // ── Blue dot
-                    Opacity(
-                      opacity: _dotOpacity.value,
-                      child: Transform.scale(
-                        scale: _dotScale.value,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: const BoxDecoration(
-                            color: AppColors.blue,
-                            shape: BoxShape.circle,
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 20, top: 8),
+                        child: TextButton(
+                          onPressed: _finishSplash,
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primaryGold,
                           ),
+                          child: const Text('Lewati'),
                         ),
                       ),
                     ),
+                    Expanded(
+                      child: Center(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final maxLogoSize =
+                                MediaQuery.sizeOf(context).width * 0.84;
+                            final logoSize = constraints.maxHeight < maxLogoSize
+                                ? constraints.maxHeight
+                                : maxLogoSize;
 
-                    const SizedBox(height: 28),
-
-                    // ── "Workforce"
-                    SlideTransition(
-                      position: _titleSlide,
-                      child: Opacity(
-                        opacity: _titleOpacity.value,
-                        child: Text(
-                          'Workforce',
-                          style: AppTypography.appTitle.copyWith(
-                            fontSize: 32,
-                            letterSpacing: -0.5,
-                          ),
+                            return FadeTransition(
+                              opacity: _logoOpacity,
+                              child: ScaleTransition(
+                                scale: _logoScale,
+                                child: Image.asset(
+                                  'assets/images/app-logo.png',
+                                  width: logoSize,
+                                  height: logoSize,
+                                  fit: BoxFit.contain,
+                                  semanticLabel: 'Ethes Tech',
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
-
-                    const SizedBox(height: 2),
-
-                    // ── "Attendance"
-                    SlideTransition(
-                      position: _subtitleSlide,
-                      child: Opacity(
-                        opacity: _subtitleOpacity.value,
-                        child: Text(
-                          'Attendance',
-                          style: AppTypography.appTitle.copyWith(
-                            fontSize: 32,
-                            letterSpacing: -0.5,
+                    FadeTransition(
+                      opacity: _titleOpacity,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                        decoration: const BoxDecoration(
+                          color: AppColors.scaffoldBg,
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(30),
                           ),
                         ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ── Accent line (draws in from center)
-                    SizedBox(
-                      height: 2,
-                      width: 48,
-                      child: Align(
-                        alignment: Alignment.center,
-                        child: FractionallySizedBox(
-                          widthFactor: _lineWidth.value,
-                          child: Container(
-                            height: 2,
-                            decoration: BoxDecoration(
-                              color: AppColors.blue,
-                              borderRadius: BorderRadius.circular(1),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SlideTransition(
+                              position: _titleSlide,
+                              child: Text(
+                                'Workforce Attendance',
+                                textAlign: TextAlign.center,
+                                style: AppTypography.appTitle.copyWith(
+                                  color: AppColors.textDark,
+                                  fontSize: 26,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 8),
+                            FadeTransition(
+                              opacity: _subtitleOpacity,
+                              child: SlideTransition(
+                                position: _subtitleSlide,
+                                child: Text(
+                                  'Kelola kehadiran magang dengan lebih mudah.',
+                                  textAlign: TextAlign.center,
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 11,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.cardBg,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.event_available_rounded,
+                                    color: AppColors.sidebarBg,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Presensi praktis dan tercatat',
+                                    style: AppTypography.bodyMedium.copyWith(
+                                      color: AppColors.textDark,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 22),
+                            SizedBox(
+                              height: 3,
+                              width: 72,
+                              child: Align(
+                                alignment: Alignment.center,
+                                child: FractionallySizedBox(
+                                  widthFactor: _lineWidth.value,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryGold,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                    child: const SizedBox.expand(),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

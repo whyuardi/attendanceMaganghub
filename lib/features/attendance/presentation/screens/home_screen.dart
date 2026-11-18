@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/loading_view.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/attendance.dart';
@@ -54,12 +53,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   String _formatFullDate(DateTime dt) {
     const days = [
-      'Senin', 'Selasa', 'Rabu', 'Kamis',
-      'Jumat', 'Sabtu', 'Minggu'
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
     ];
     const months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
     ];
 
     final dayName = days[dt.weekday - 1];
@@ -85,7 +99,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     if (todayState.isLoading && todayState.attendance == null) {
       return const Scaffold(
-        backgroundColor: AppColors.white,
+        backgroundColor: AppColors.scaffoldBg,
         body: LoadingView(),
       );
     }
@@ -93,6 +107,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final attendance = todayState.attendance;
     final hasCheckedIn = attendance?.checkInAt != null;
     final hasCheckedOut = attendance?.checkOutAt != null;
+    final checkInTime =
+        attendance?.formattedCheckIn ??
+        (!hasCheckedIn ? _formatLiveTime(_currentTime) : '--.--');
 
     // Helper method to capture photo from camera and submit attendance
     Future<void> performAttendanceWithCamera(bool isCheckIn) async {
@@ -149,10 +166,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.scaffoldBg,
       body: SafeArea(
         child: RefreshIndicator(
-          color: AppColors.blue,
+          color: AppColors.sidebarBg,
           backgroundColor: AppColors.white,
           onRefresh: () async {
             await todayNotifier.loadToday();
@@ -163,39 +180,89 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. Greeting
-                Text(
-                  'Halo, $firstName',
-                  style: AppTypography.greeting,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'SELAMAT DATANG',
+                      style: AppTypography.monoSecondary.copyWith(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      firstName,
+                      style: AppTypography.greeting.copyWith(
+                        color: AppColors.sidebarBg,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 36),
-
-                // 2. Hero Time (JetBrains Mono 400, 48sp)
-                Center(
+                const SizedBox(height: 28),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBg,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                   child: Column(
                     children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'WAKTU SAAT INI',
+                            style: AppTypography.monoSecondary.copyWith(
+                              color: AppColors.textMuted,
+                              fontSize: 11,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const Icon(
+                            Icons.access_time_rounded,
+                            color: AppColors.primaryGold,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
                       Text(
                         _formatLiveTime(_currentTime),
-                        style: AppTypography.heroTime,
+                        style: AppTypography.heroTime.copyWith(
+                          color: AppColors.sidebarBg,
+                          fontSize: 46,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         _formatFullDate(_currentTime),
-                        style: AppTypography.bodyMedium,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.textMuted,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 36),
-
-                // 3. Exactly ONE card (radius 24, no shadow)
+                const SizedBox(height: 24),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: AppColors.white,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.gray100, width: 1.5),
+                    border: Border.all(color: AppColors.gray100),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0A061A14),
+                        blurRadius: 20,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,10 +272,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         children: [
                           Text(
                             'Status kehadiran',
-                            style: AppTypography.bodyMedium,
+                            style: AppTypography.itemTitle.copyWith(
+                              color: AppColors.textDark,
+                              fontSize: 15,
+                            ),
                           ),
                           StatusPill(
-                            status: attendance?.status ?? AttendanceStatus.belumAbsen,
+                            status:
+                                attendance?.status ??
+                                AttendanceStatus.belumAbsen,
                           ),
                         ],
                       ),
@@ -221,12 +293,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               children: [
                                 Text(
                                   'Masuk',
-                                  style: AppTypography.bodyMedium,
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    color: AppColors.textMuted,
+                                  ),
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  attendance?.formattedCheckIn ?? '--.--',
-                                  style: AppTypography.monoMedium.copyWith(fontSize: 18),
+                                  checkInTime,
+                                  style: AppTypography.monoMedium.copyWith(
+                                    color: AppColors.sidebarBg,
+                                    fontSize: 18,
+                                  ),
                                 ),
                               ],
                             ),
@@ -243,12 +320,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               children: [
                                 Text(
                                   'Pulang',
-                                  style: AppTypography.bodyMedium,
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    color: AppColors.textMuted,
+                                  ),
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
                                   attendance?.formattedCheckOut ?? '--.--',
-                                  style: AppTypography.monoMedium.copyWith(fontSize: 18),
+                                  style: AppTypography.monoMedium.copyWith(
+                                    color: AppColors.sidebarBg,
+                                    fontSize: 18,
+                                  ),
                                 ),
                               ],
                             ),
@@ -266,8 +348,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.gray100,
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.statusRed),
                     ),
                     child: Text(
                       todayState.errorMessage!,
@@ -282,8 +365,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.gray100,
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppColors.cardBg,
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
                       todayState.successMessage!,
@@ -294,13 +377,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ],
 
-                const SizedBox(height: 32),
-
-                // 4. Action Button
-                AppButton(
-                  text: buttonText,
-                  isLoading: todayState.isSubmitting,
-                  onPressed: isButtonDisabled ? null : buttonAction,
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: isButtonDisabled || todayState.isSubmitting
+                        ? null
+                        : buttonAction,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.sidebarBg,
+                      foregroundColor: AppColors.white,
+                      disabledBackgroundColor: AppColors.gray300,
+                      disabledForegroundColor: AppColors.textMuted,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    child: todayState.isSubmitting
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                AppColors.primaryGold,
+                              ),
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                isButtonDisabled
+                                    ? Icons.check_circle_outline_rounded
+                                    : Icons.camera_alt_outlined,
+                                color: AppColors.primaryGold,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                buttonText,
+                                style: AppTypography.button.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
                 ),
               ],
             ),
