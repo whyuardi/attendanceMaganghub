@@ -53,8 +53,17 @@ AppError mapDioExceptionToAppError(dynamic error) {
     }
     if (error.response != null) {
       final data = error.response?.data;
-      if (data is Map<String, dynamic> && data.containsKey('message')) {
-        return ValidationError(data['message'].toString());
+      if (data is Map) {
+        final err = data['error'];
+        if (err is Map && err['message'] != null) {
+          return ValidationError(err['message'].toString());
+        }
+        if (err is String) {
+          return ValidationError(err);
+        }
+        if (data['message'] != null) {
+          return ValidationError(data['message'].toString());
+        }
       }
       return ValidationError('Request ditolak oleh server (${error.response?.statusCode})');
     }
