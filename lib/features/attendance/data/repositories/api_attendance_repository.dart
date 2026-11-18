@@ -13,7 +13,7 @@ class ApiAttendanceRepository implements AttendanceRepository {
     try {
       final response = await dio.get('/attendance/today');
       final data = response.data;
-      final attData = data['data'] ?? data;
+      final attData = data['attendance'] ?? data['data'];
       if (attData == null || (attData is Map && attData.isEmpty)) {
         return null;
       }

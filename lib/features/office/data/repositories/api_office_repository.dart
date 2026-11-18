@@ -11,10 +11,12 @@ class ApiOfficeRepository implements OfficeRepository {
   @override
   Future<Office> getOffice() async {
     try {
-      // TODO: Sesuaikan path endpoint ini bila backend Laravel menggunakan nama route berbeda
-      final response = await dio.get('/office');
+      final response = await dio.get('/offices');
       final data = response.data;
       final officeData = data['data'] ?? data;
+      if (officeData is List && officeData.isNotEmpty) {
+        return Office.fromJson(Map<String, dynamic>.from(officeData.first as Map));
+      }
       return Office.fromJson(Map<String, dynamic>.from(officeData as Map));
     } catch (e) {
       throw mapDioExceptionToAppError(e);
