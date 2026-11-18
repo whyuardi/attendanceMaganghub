@@ -1,8 +1,8 @@
 class AppConfig {
   AppConfig._();
 
-  /// Change this single flag to switch between Mock Repository and Laravel API
-  static const bool useMock = true;
+  /// Change this single flag to switch between Mock Repository and Live API
+  static const bool useMock = false;
 
   /// Backend API Base URL
   static const String baseUrl = 'http://192.168.0.130:3000/api';
