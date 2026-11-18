@@ -117,6 +117,39 @@ class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
   }
 
   Future<bool> checkOut({double? latitude, double? longitude, Uint8List? photoBytes}) async {
+    final now = DateTime.now();
+
+    // Validasi hari Minggu
+    if (now.weekday == DateTime.sunday) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage: 'Hari Minggu libur. Tidak dapat melakukan absensi',
+      );
+      return false;
+    }
+
+    // Validasi Senin - Jumat: checkout hanya setelah pukul 17:00 (jam 5 sore)
+    if (now.weekday >= DateTime.monday && now.weekday <= DateTime.friday) {
+      if (now.hour < 17) {
+        state = state.copyWith(
+          isSubmitting: false,
+          errorMessage: 'Belum waktunya absen pulang. Absen pulang hanya dapat dilakukan mulai pukul 17.00 WIB',
+        );
+        return false;
+      }
+    }
+
+    // Validasi Sabtu: checkout hanya setelah pukul 16:00
+    if (now.weekday == DateTime.saturday) {
+      if (now.hour < 16) {
+        state = state.copyWith(
+          isSubmitting: false,
+          errorMessage: 'Belum waktunya absen pulang. Absen pulang hari Sabtu hanya dapat dilakukan mulai pukul 16.00 WIB',
+        );
+        return false;
+      }
+    }
+
     state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
     try {
       final double lat;

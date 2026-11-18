@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -50,7 +52,7 @@ class OfficeScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 1. Gambaran Peta / Map Preview Card
+                    // 1. Gambaran Peta Presisi / Precise Interactive Map
                     _OfficeMapPreview(
                       office: office,
                       onTap: _openMaps,
@@ -137,108 +139,120 @@ class _OfficeMapPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lat = office.latitude;
-    final lng = office.longitude;
-    final mapUrl =
-        'https://staticmap.openstreetmap.de/staticmap.php?center=$lat,$lng&zoom=17&size=680x380&maptype=mapnik';
+    final location = LatLng(office.latitude, office.longitude);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 220,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF3F4F6),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.gray100, width: 1.5),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Map Image with network loading & offline vector fallback
-            Image.network(
-              mapUrl,
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _buildFallbackVectorMap(),
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-                return _buildFallbackVectorMap();
-              },
-            ),
-
-            // Office Center Pin Marker
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.blue,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.blue.withValues(alpha: 0.4),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.business,
-                    color: AppColors.white,
-                    size: 20,
-                  ),
-                ),
-                Container(
-                  width: 4,
-                  height: 6,
-                  color: AppColors.blue,
-                ),
-              ],
-            ),
-
-            // Top-left label badge
-            Positioned(
-              top: 14,
-              left: 14,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.white.withValues(alpha: 0.95),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.location_on, size: 14, color: AppColors.statusRed),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Peta Lokasi Kantor',
-                      style: AppTypography.itemTitle.copyWith(
-                        color: AppColors.black,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
+    return Container(
+      height: 240,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.gray100, width: 1.5),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          // Real OpenStreetMap view centered exactly at the office coordinate
+          FlutterMap(
+            options: MapOptions(
+              initialCenter: location,
+              initialZoom: 18.0,
+              minZoom: 12.0,
+              maxZoom: 19.0,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
               ),
             ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.ethestech.attendance',
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: location,
+                    width: 48,
+                    height: 54,
+                    alignment: Alignment.topCenter,
+                    child: GestureDetector(
+                      onTap: onTap,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.blue,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.blue.withValues(alpha: 0.4),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.business,
+                              color: AppColors.white,
+                              size: 18,
+                            ),
+                          ),
+                          CustomPaint(
+                            size: const Size(10, 8),
+                            painter: _TrianglePainter(color: AppColors.blue),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
 
-            // Bottom-right tap hint badge
-            Positioned(
-              bottom: 14,
-              right: 14,
+          // Top-left label badge
+          Positioned(
+            top: 14,
+            left: 14,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.white.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.location_on, size: 14, color: AppColors.statusRed),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Peta Lokasi Kantor',
+                    style: AppTypography.itemTitle.copyWith(
+                      color: AppColors.black,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Bottom-right tap hint badge
+          Positioned(
+            bottom: 14,
+            right: 14,
+            child: GestureDetector(
+              onTap: onTap,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
@@ -251,7 +265,7 @@ class _OfficeMapPreview extends StatelessWidget {
                     const Icon(Icons.open_in_new, size: 12, color: AppColors.white),
                     const SizedBox(width: 4),
                     Text(
-                      'Buka di Google Maps',
+                      'Buka Google Maps',
                       style: AppTypography.itemTitle.copyWith(
                         color: AppColors.white,
                         fontSize: 11,
@@ -261,56 +275,31 @@ class _OfficeMapPreview extends StatelessWidget {
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFallbackVectorMap() {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      color: const Color(0xFFE5E7EB),
-      child: CustomPaint(
-        painter: _GridMapPainter(),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _GridMapPainter extends CustomPainter {
+class _TrianglePainter extends CustomPainter {
+  final Color color;
+
+  _TrianglePainter({required this.color});
+
   @override
   void paint(Canvas canvas, Size size) {
-    final linePaint = Paint()
-      ..color = const Color(0xFFD1D5DB)
-      ..strokeWidth = 1.0;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
 
-    // Grid lines
-    const step = 30.0;
-    for (double x = 0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), linePaint);
-    }
-    for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
-    }
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..close();
 
-    // Road lines
-    final roadPaint = Paint()
-      ..color = const Color(0xFFCBD5E1)
-      ..strokeWidth = 12.0
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawLine(
-      Offset(0, size.height * 0.45),
-      Offset(size.width, size.height * 0.55),
-      roadPaint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.5, 0),
-      Offset(size.width * 0.5, size.height),
-      roadPaint,
-    );
+    canvas.drawPath(path, paint);
   }
 
   @override
