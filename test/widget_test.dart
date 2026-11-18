@@ -183,4 +183,134 @@ void main() {
       );
     });
   });
+
+  group('Day & Time-Specific Check-Out / Holiday Rules', () {
+    late TokenStorage storage;
+
+    setUp(() {
+      storage = TokenStorage.inMemory('mock_sanctum_token_1');
+    });
+
+    test('Sunday: Check-in is rejected (cannot attend on Sunday)', () async {
+      final sundayTime = DateTime(2026, 11, 22, 8, 0, 0); // Sunday
+      final repo = MockAttendanceRepository(
+        tokenStorage: storage,
+        clock: () => sundayTime,
+        delay: Duration.zero,
+      );
+
+      expect(
+        () async => await repo.checkIn(),
+        throwsA(isA<ValidationError>().having(
+          (e) => e.message,
+          'message',
+          contains('Hari Minggu libur'),
+        )),
+      );
+    });
+
+    test('Sunday: Check-out is rejected (cannot attend on Sunday)', () async {
+      final sundayTime = DateTime(2026, 11, 22, 17, 0, 0); // Sunday
+      final repo = MockAttendanceRepository(
+        tokenStorage: storage,
+        clock: () => sundayTime,
+        delay: Duration.zero,
+      );
+
+      expect(
+        () async => await repo.checkOut(),
+        throwsA(isA<ValidationError>().having(
+          (e) => e.message,
+          'message',
+          contains('Hari Minggu libur'),
+        )),
+      );
+    });
+
+    test('Monday—Friday: Check-out before 17:00 (e.g. 16:59:59) is rejected', () async {
+      final mondayIn = DateTime(2026, 11, 16, 8, 0, 0); // Monday
+      final mondayEarlyOut = DateTime(2026, 11, 16, 16, 59, 59);
+
+      DateTime currentTime = mondayIn;
+      final repo = MockAttendanceRepository(
+        tokenStorage: storage,
+        clock: () => currentTime,
+        delay: Duration.zero,
+      );
+
+      await repo.checkIn();
+
+      currentTime = mondayEarlyOut;
+      expect(
+        () async => await repo.checkOut(),
+        throwsA(isA<ValidationError>().having(
+          (e) => e.message,
+          'message',
+          contains('Absen pulang hari Senin—Jumat baru dapat dilakukan setelah pukul 17.00'),
+        )),
+      );
+    });
+
+    test('Monday—Friday: Check-out at or after 17:00 (e.g. 17:00:00) succeeds', () async {
+      final mondayIn = DateTime(2026, 11, 16, 8, 0, 0); // Monday
+      final mondayValidOut = DateTime(2026, 11, 16, 17, 0, 0);
+
+      DateTime currentTime = mondayIn;
+      final repo = MockAttendanceRepository(
+        tokenStorage: storage,
+        clock: () => currentTime,
+        delay: Duration.zero,
+      );
+
+      await repo.checkIn();
+
+      currentTime = mondayValidOut;
+      final result = await repo.checkOut();
+      expect(result.checkOutAt, mondayValidOut);
+      expect(result.formattedCheckOut, '17.00');
+    });
+
+    test('Saturday: Check-out before 16:00 (e.g. 15:59:59) is rejected', () async {
+      final saturdayIn = DateTime(2026, 11, 21, 8, 0, 0); // Saturday
+      final saturdayEarlyOut = DateTime(2026, 11, 21, 15, 59, 59);
+
+      DateTime currentTime = saturdayIn;
+      final repo = MockAttendanceRepository(
+        tokenStorage: storage,
+        clock: () => currentTime,
+        delay: Duration.zero,
+      );
+
+      await repo.checkIn();
+
+      currentTime = saturdayEarlyOut;
+      expect(
+        () async => await repo.checkOut(),
+        throwsA(isA<ValidationError>().having(
+          (e) => e.message,
+          'message',
+          contains('Absen pulang hari Sabtu baru dapat dilakukan setelah pukul 16.00'),
+        )),
+      );
+    });
+
+    test('Saturday: Check-out at or after 16:00 (e.g. 16:00:00) succeeds', () async {
+      final saturdayIn = DateTime(2026, 11, 21, 8, 0, 0); // Saturday
+      final saturdayValidOut = DateTime(2026, 11, 21, 16, 0, 0);
+
+      DateTime currentTime = saturdayIn;
+      final repo = MockAttendanceRepository(
+        tokenStorage: storage,
+        clock: () => currentTime,
+        delay: Duration.zero,
+      );
+
+      await repo.checkIn();
+
+      currentTime = saturdayValidOut;
+      final result = await repo.checkOut();
+      expect(result.checkOutAt, saturdayValidOut);
+      expect(result.formattedCheckOut, '16.00');
+    });
+  });
 }

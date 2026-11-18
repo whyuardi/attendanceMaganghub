@@ -58,11 +58,16 @@ UI layer tidak pernah memanggil `Dio` secara langsung, sehingga peralihan dilaku
    - Format jam di UI ditampilkan dalam format titik Indonesia (`07.52`, `--.--`).
    - Status response mengikuti format snake_case.
 
-2. **Aturan Bisnis & Batas Jam Masuk:**
+2. **Aturan Bisnis & Batas Jam Absensi:**
    - Jam masuk kantor: **08:00 WIB**, toleransi keterlambatan: **15 menit**.
    - Pukul `08:15:00` dihitung **Tepat waktu** (`tepat_waktu`).
    - Pukul `08:15:01` dan seterusnya dihitung **Terlambat** (`terlambat`).
-   - Penentuan status dihitung oleh server; aplikasi client hanya menerima dan menampilkan status dari server.
+   - **Absen Pulang (Check-out):**
+     - **Senin s/d Jumat:** baru dapat dilakukan setelah pukul **17.00 WIB** (pukul `17:00:00`).
+     - **Sabtu:** baru dapat dilakukan setelah pukul **16.00 WIB** (pukul `16:00:00`).
+   - **Hari Libur:**
+     - **Minggu:** libur penuh, tidak dapat melakukan absensi masuk maupun pulang.
+   - Penentuan status dihitung oleh server; aplikasi client hanya menerima dan menampilkan status dari response server.
 
 3. **Endpoint Office (Asumsi Khusus):**
    - Sesuai instruksi assessment, endpoint kantor belum ada di spesifikasi resmi awal.

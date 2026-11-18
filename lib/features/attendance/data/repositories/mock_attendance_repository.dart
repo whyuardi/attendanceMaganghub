@@ -128,6 +128,12 @@ class MockAttendanceRepository implements AttendanceRepository {
 
     final employeeId = await _getCurrentEmployeeId();
     final now = clock();
+
+    // Validasi hari Minggu: tidak bisa absen sama sekali
+    if (now.weekday == DateTime.sunday) {
+      throw const ValidationError('Hari Minggu libur. Tidak dapat melakukan absensi');
+    }
+
     final todayStr = _formatWorkDate(now);
     final list = _database.putIfAbsent(employeeId, () => []);
 
@@ -172,6 +178,12 @@ class MockAttendanceRepository implements AttendanceRepository {
 
     final employeeId = await _getCurrentEmployeeId();
     final now = clock();
+
+    // Validasi hari Minggu: tidak bisa absen sama sekali
+    if (now.weekday == DateTime.sunday) {
+      throw const ValidationError('Hari Minggu libur. Tidak dapat melakukan absensi');
+    }
+
     final todayStr = _formatWorkDate(now);
     final list = _database.putIfAbsent(employeeId, () => []);
 
@@ -188,6 +200,23 @@ class MockAttendanceRepository implements AttendanceRepository {
     if (current.checkOutAt != null) {
       final timeStr = _formatTime(current.checkOutAt!);
       throw ValidationError('Kamu sudah absen pulang hari ini pukul $timeStr');
+    }
+
+    // Validasi jam absen pulang:
+    // Senin - Jumat: baru bisa setelah pukul 17.00
+    // Sabtu: baru bisa setelah pukul 16.00
+    if (now.weekday >= DateTime.monday && now.weekday <= DateTime.friday) {
+      if (now.hour < 17) {
+        throw const ValidationError(
+          'Absen pulang hari Senin—Jumat baru dapat dilakukan setelah pukul 17.00',
+        );
+      }
+    } else if (now.weekday == DateTime.saturday) {
+      if (now.hour < 16) {
+        throw const ValidationError(
+          'Absen pulang hari Sabtu baru dapat dilakukan setelah pukul 16.00',
+        );
+      }
     }
 
     // ATT-04: OUT setelah IN dan belum OUT berhasil
