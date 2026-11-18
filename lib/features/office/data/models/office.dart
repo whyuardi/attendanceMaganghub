@@ -4,6 +4,7 @@ class Office {
   final String address;
   final double latitude;
   final double longitude;
+  final int radiusM;
 
   const Office({
     required this.id,
@@ -11,6 +12,7 @@ class Office {
     required this.address,
     required this.latitude,
     required this.longitude,
+    this.radiusM = 15,
   });
 
   factory Office.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,9 @@ class Office {
       address: json['address'] as String? ?? '',
       latitude: parseDouble(json['latitude'] ?? json['lat']),
       longitude: parseDouble(json['longitude'] ?? json['lng']),
+      radiusM: json['radius_m'] is num
+          ? (json['radius_m'] as num).toInt()
+          : int.tryParse(json['radius_m']?.toString() ?? '15') ?? 15,
     );
   }
 
@@ -36,6 +41,7 @@ class Office {
       'address': address,
       'latitude': latitude,
       'longitude': longitude,
+      'radius_m': radiusM,
     };
   }
 
