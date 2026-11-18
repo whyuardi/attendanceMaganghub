@@ -4,8 +4,8 @@ class AppConfig {
   /// Change this single flag to switch between Mock Repository and Laravel API
   static const bool useMock = true;
 
-  /// Laravel API Base URL
-  static const String baseUrl = 'http://10.0.2.2:8000/api'; // Android emulator localhost
+  /// Backend API Base URL
+  static const String baseUrl = 'http://192.168.0.130:3000/api';
 
   /// Network timeouts
   static const Duration connectTimeout = Duration(seconds: 10);
