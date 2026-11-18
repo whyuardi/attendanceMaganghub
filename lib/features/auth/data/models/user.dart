@@ -14,8 +14,9 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    // Supports flat structure or nested employee/user object from Laravel
-    final employeeData = json['employee'] as Map<String, dynamic>?;
+    // Supports flat structure or nested employee/user object from API
+    final rawEmployee = json['employee'];
+    final employeeData = rawEmployee is Map ? Map<String, dynamic>.from(rawEmployee) : null;
 
     return User(
       id: json['id'] is int ? json['id'] as int : int.tryParse(json['id'].toString()) ?? 0,

@@ -11,7 +11,7 @@ class ApiOfficeRepository implements OfficeRepository {
   @override
   Future<Office> getOffice() async {
     try {
-      final response = await dio.get('/offices');
+      final response = await dio.get('offices');
       final data = response.data;
       final officeData = data['data'] ?? data;
       if (officeData is List && officeData.isNotEmpty) {

@@ -17,7 +17,7 @@ class ApiAuthRepository implements AuthRepository {
   Future<User> login(String email, String password) async {
     try {
       final response = await dio.post(
-        '/login',
+        'login',
         data: {'email': email, 'password': password},
       );
 
@@ -42,7 +42,7 @@ class ApiAuthRepository implements AuthRepository {
   @override
   Future<User> getMe() async {
     try {
-      final response = await dio.get('/me');
+      final response = await dio.get('me');
       final data = response.data;
       final userData = data['data'] ?? data['user'] ?? data;
       return User.fromJson(Map<String, dynamic>.from(userData as Map));
@@ -54,7 +54,7 @@ class ApiAuthRepository implements AuthRepository {
   @override
   Future<void> logout() async {
     try {
-      await dio.post('/logout');
+      await dio.post('logout');
     } catch (_) {
       // Ignore network failure on logout; ensure local token is wiped
     } finally {
