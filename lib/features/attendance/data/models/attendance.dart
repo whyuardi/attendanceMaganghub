@@ -29,15 +29,30 @@ class Attendance {
       return null;
     }
 
+    final inAt = parseDate(json['check_in_at']);
+    final outAt = parseDate(json['check_out_at']);
+
+    final rawStatusValue = json['status'] ?? json['state'] ?? json['attendance_status'];
+    String statusStr = rawStatusValue?.toString() ?? '';
+    if (statusStr.isEmpty || statusStr == 'null') {
+      if (inAt != null) {
+        final hour = inAt.hour;
+        final minute = inAt.minute;
+        statusStr = (hour > 8 || (hour == 8 && minute > 15)) ? 'terlambat' : 'tepat_waktu';
+      } else {
+        statusStr = 'belum_absen';
+      }
+    }
+
     return Attendance(
       id: json['id'] is int ? json['id'] as int : int.tryParse(json['id'].toString()) ?? 0,
       employeeId: json['employee_id'] is int
           ? json['employee_id'] as int
           : int.tryParse(json['employee_id']?.toString() ?? '0') ?? 0,
       workDate: json['work_date'] as String? ?? '',
-      checkInAt: parseDate(json['check_in_at']),
-      checkOutAt: parseDate(json['check_out_at']),
-      rawStatus: json['status'] as String? ?? 'belum_absen',
+      checkInAt: inAt,
+      checkOutAt: outAt,
+      rawStatus: statusStr,
     );
   }
 
@@ -53,13 +68,30 @@ class Attendance {
   }
 
   AttendanceStatus get status {
-    final s = rawStatus.toLowerCase();
+    final s = rawStatus.toLowerCase().trim();
     if (s.contains('terlambat') || s == 'late') {
       return AttendanceStatus.terlambat;
     }
-    if (s.contains('tepat') || s == 'on_time') {
+    if (s.contains('tepat') ||
+        s == 'on_time' ||
+        s.contains('hadir') ||
+        s == 'masuk' ||
+        s == 'present' ||
+        s == 'sudah_in' ||
+        s == 'sudah_out') {
       return AttendanceStatus.tepatWaktu;
     }
+
+    // Jika karyawan sudah absen masuk, evaluasi berdasarkan waktu jam masuk
+    if (checkInAt != null) {
+      final hour = checkInAt!.hour;
+      final minute = checkInAt!.minute;
+      if (hour > 8 || (hour == 8 && minute > 15)) {
+        return AttendanceStatus.terlambat;
+      }
+      return AttendanceStatus.tepatWaktu;
+    }
+
     return AttendanceStatus.belumAbsen;
   }
 

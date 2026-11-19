@@ -29,6 +29,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (user == null || user.name.trim().isEmpty) {
         ref.read(authNotifierProvider.notifier).checkAuthStatus();
       }
+      ref.read(todayAttendanceProvider.notifier).loadToday();
     });
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {

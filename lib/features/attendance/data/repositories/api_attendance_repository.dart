@@ -29,16 +29,48 @@ class ApiAttendanceRepository implements AttendanceRepository {
 
   ApiAttendanceRepository({required this.dio});
 
+  Map<String, dynamic>? _extractAttendanceMap(dynamic data) {
+    if (data == null) return null;
+    if (data is! Map) return null;
+
+    final map = Map<String, dynamic>.from(data);
+
+    // 1. data['attendance']
+    if (map['attendance'] is Map && (map['attendance'] as Map).isNotEmpty) {
+      return Map<String, dynamic>.from(map['attendance'] as Map);
+    }
+
+    // 2. data['data']
+    if (map['data'] is Map && (map['data'] as Map).isNotEmpty) {
+      final inner = Map<String, dynamic>.from(map['data'] as Map);
+      if (inner['attendance'] is Map && (inner['attendance'] as Map).isNotEmpty) {
+        return Map<String, dynamic>.from(inner['attendance'] as Map);
+      }
+      if (inner.containsKey('id') || inner.containsKey('check_in_at') || inner.containsKey('work_date')) {
+        return inner;
+      }
+    }
+
+    // 3. Flat object (data itu sendiri)
+    if (map.containsKey('check_in_at') || map.containsKey('work_date') || map.containsKey('id')) {
+      if (map['id'] != null || map['check_in_at'] != null) {
+        return map;
+      }
+    }
+
+    return null;
+  }
+
   @override
   Future<Attendance?> getToday() async {
     try {
       final response = await dio.get('attendance/today');
       final data = response.data;
-      final attData = data['attendance'] ?? data['data'];
-      if (attData == null || (attData is Map && attData.isEmpty)) {
+      final attMap = _extractAttendanceMap(data);
+      if (attMap == null || attMap.isEmpty) {
         return null;
       }
-      return Attendance.fromJson(Map<String, dynamic>.from(attData as Map));
+      return Attendance.fromJson(attMap);
     } catch (e) {
       throw mapDioExceptionToAppError(e);
     }
@@ -80,8 +112,9 @@ class ApiAttendanceRepository implements AttendanceRepository {
         data: formData,
       );
       final data = response.data;
-      final attData = data['data'] ?? data['attendance'] ?? data;
-      return Attendance.fromJson(Map<String, dynamic>.from(attData as Map));
+      final attMap = _extractAttendanceMap(data) ??
+          (data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{});
+      return Attendance.fromJson(attMap);
     } catch (e) {
       throw mapDioExceptionToAppError(e);
     }
@@ -122,8 +155,9 @@ class ApiAttendanceRepository implements AttendanceRepository {
         data: formData,
       );
       final data = response.data;
-      final attData = data['data'] ?? data['attendance'] ?? data;
-      return Attendance.fromJson(Map<String, dynamic>.from(attData as Map));
+      final attMap = _extractAttendanceMap(data) ??
+          (data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{});
+      return Attendance.fromJson(attMap);
     } catch (e) {
       throw mapDioExceptionToAppError(e);
     }

@@ -105,6 +105,12 @@ class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
         attendance: result,
         successMessage: 'Absen masuk tercatat ${result.formattedCheckIn}',
       );
+      try {
+        final fresh = await _repository.getToday();
+        if (fresh != null) {
+          state = state.copyWith(attendance: fresh);
+        }
+      } catch (_) {}
       return true;
     } catch (e) {
       // ATT-08: JANGAN tampilkan sukses palsu dan JANGAN ubah status lokal sebelum server membalas
@@ -174,6 +180,12 @@ class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
         attendance: result,
         successMessage: 'Absen pulang tercatat ${result.formattedCheckOut}',
       );
+      try {
+        final fresh = await _repository.getToday();
+        if (fresh != null) {
+          state = state.copyWith(attendance: fresh);
+        }
+      } catch (_) {}
       return true;
     } catch (e) {
       // ATT-08: JANGAN ubah status lokal jika gagal
