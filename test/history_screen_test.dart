@@ -93,6 +93,8 @@ class _FakeAttendanceRepository implements AttendanceRepository {
   Future<Attendance> checkIn({
     double? latitude,
     double? longitude,
+    double? accuracyMeters,
+    bool isMocked = false,
     Uint8List? photoBytes,
   }) => throw UnimplementedError();
 
@@ -100,6 +102,8 @@ class _FakeAttendanceRepository implements AttendanceRepository {
   Future<Attendance> checkOut({
     double? latitude,
     double? longitude,
+    double? accuracyMeters,
+    bool isMocked = false,
     Uint8List? photoBytes,
   }) => throw UnimplementedError();
 }

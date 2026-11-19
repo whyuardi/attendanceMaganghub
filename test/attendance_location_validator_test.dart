@@ -9,6 +9,7 @@ const _office = Office(
   address: 'Yogyakarta',
   latitude: -7.4296,
   longitude: 111.0095,
+  radiusMeters: 25,
 );
 
 AttendanceEvidence _evidenceAtDistance(
@@ -17,7 +18,7 @@ AttendanceEvidence _evidenceAtDistance(
 }) {
   return AttendanceEvidence(
     photoPath: 'attendance.jpg',
-    latitude: _office.latitude + meters / 111000,
+    latitude: _office.latitude + meters / 111195,
     longitude: _office.longitude,
     accuracyMeters: accuracyMeters,
   );
@@ -25,7 +26,7 @@ AttendanceEvidence _evidenceAtDistance(
 
 void main() {
   group('AttendanceLocationValidator', () {
-    test('accepts a measured position within the 10 m limit', () {
+    test('accepts a measured position within the 25 m limit', () {
       final distance = AttendanceLocationValidator.validateWithinRange(
         evidence: _evidenceAtDistance(4, accuracyMeters: 2),
         offices: const [_office],
@@ -34,37 +35,42 @@ void main() {
       expect(distance, closeTo(4, 0.2));
     });
 
-    test('rejects a measured position farther than 10 m', () {
+    test('accepts a measured position just inside the 25 m limit', () {
+      final distance = AttendanceLocationValidator.validateWithinRange(
+        evidence: _evidenceAtDistance(24.9, accuracyMeters: 2),
+        offices: const [_office],
+      );
+
+      expect(distance, closeTo(24.9, 0.2));
+    });
+
+    test('rejects a measured position farther than 25 m', () {
       expect(
         () => AttendanceLocationValidator.validateWithinRange(
-          evidence: _evidenceAtDistance(12, accuracyMeters: 2),
+          evidence: _evidenceAtDistance(26, accuracyMeters: 2),
           offices: const [_office],
         ),
         throwsA(
           isA<AttendanceLocationException>().having(
             (error) => error.message,
             'message',
-            contains('12.0 m dari kantor'),
+            contains('26.0 m'),
           ),
         ),
       );
     });
 
-    test('rejects a GPS fix too imprecise to confirm the 10 m limit', () {
-      expect(
-        () => AttendanceLocationValidator.validateWithinRange(
-          evidence: _evidenceAtDistance(8, accuracyMeters: 3),
+    test(
+      'accepts a position within 25 m regardless of GPS accuracy display',
+      () {
+        final distance = AttendanceLocationValidator.validateWithinRange(
+          evidence: _evidenceAtDistance(20, accuracyMeters: 3),
           offices: const [_office],
-        ),
-        throwsA(
-          isA<AttendanceLocationException>().having(
-            (error) => error.message,
-            'message',
-            contains('Akurasi GPS belum cukup'),
-          ),
-        ),
-      );
-    });
+        );
+
+        expect(distance, closeTo(20, 0.2));
+      },
+    );
 
     test('uses the nearest active office', () {
       final nearbyOffice = Office(

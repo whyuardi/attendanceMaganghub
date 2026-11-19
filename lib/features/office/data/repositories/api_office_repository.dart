@@ -9,15 +9,22 @@ class ApiOfficeRepository implements OfficeRepository {
   ApiOfficeRepository({required this.dio});
 
   @override
-  Future<Office> getOffice() async {
+  Future<List<Office>> getOffices() async {
     try {
       final response = await dio.get('offices');
       final data = response.data;
       final officeData = data['data'] ?? data;
       if (officeData is List && officeData.isNotEmpty) {
-        return Office.fromJson(Map<String, dynamic>.from(officeData.first as Map));
+        return officeData
+            .map(
+              (item) => Office.fromJson(Map<String, dynamic>.from(item as Map)),
+            )
+            .toList();
       }
-      return Office.fromJson(Map<String, dynamic>.from(officeData as Map));
+      if (officeData is Map) {
+        return [Office.fromJson(Map<String, dynamic>.from(officeData))];
+      }
+      return const [];
     } catch (e) {
       throw mapDioExceptionToAppError(e);
     }

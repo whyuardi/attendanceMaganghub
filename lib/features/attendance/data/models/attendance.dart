@@ -30,7 +30,9 @@ class Attendance {
     }
 
     return Attendance(
-      id: json['id'] is int ? json['id'] as int : int.tryParse(json['id'].toString()) ?? 0,
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse(json['id'].toString()) ?? 0,
       employeeId: json['employee_id'] is int
           ? json['employee_id'] as int
           : int.tryParse(json['employee_id']?.toString() ?? '0') ?? 0,
@@ -104,8 +106,18 @@ class Attendance {
     // Indonesian day and month names
     const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
     ];
 
     final dayName = days[date.weekday - 1];

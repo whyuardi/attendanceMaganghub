@@ -33,8 +33,8 @@ void main() {
     expect(find.text('Kantor Anda'), findsOneWidget);
     expect(find.text('Kantor Pusat'), findsOneWidget);
     expect(find.text('Jl. Contoh No. 10, Yogyakarta'), findsOneWidget);
-    expect(find.text('-7.4296, 111.0095'), findsOneWidget);
-    expect(find.text('150 m'), findsOneWidget);
+    expect(find.text('-7.2548218409116085, 110.1850344181774'), findsOneWidget);
+    expect(find.text('25 m'), findsOneWidget);
     expect(find.text('Buka di Google Maps'), findsOneWidget);
   });
 }

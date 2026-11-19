@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/loading_view.dart';
@@ -20,6 +21,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   late Timer _timer;
   DateTime _currentTime = DateTime.now();
+  bool _locationPermissionPromptHandled = false;
 
   @override
   void initState() {
@@ -43,6 +45,98 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void dispose() {
     _timer.cancel();
     super.dispose();
+  }
+
+  Future<bool> _ensureLocationPermission() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Aktifkan GPS/lokasi perangkat untuk meningkatkan akurasi absensi.',
+            ),
+          ),
+        );
+      }
+      await Geolocator.openLocationSettings();
+      return false;
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.denied) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Izin lokasi diperlukan agar absensi dapat diverifikasi secara akurat.',
+            ),
+          ),
+        );
+      }
+      return false;
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Izin lokasi ditolak permanen. Aktifkan izin dari pengaturan aplikasi.',
+            ),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+      await Geolocator.openAppSettings();
+      return false;
+    }
+
+    return true;
+  }
+
+  Future<void> _promptLocationPermissionOnce() async {
+    if (_locationPermissionPromptHandled) return;
+    _locationPermissionPromptHandled = true;
+
+    final permission = await Geolocator.checkPermission();
+    if (permission != LocationPermission.denied) return;
+
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!mounted || !serviceEnabled) {
+      return;
+    }
+
+    final allow = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Izinkan akses lokasi'),
+          content: const Text(
+            'Aplikasi menggunakan lokasi perangkat presisi untuk memverifikasi bahwa Anda berada dalam radius 25 meter dari titik absensi kantor.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Nanti'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Izinkan'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (allow == true) {
+      await _ensureLocationPermission();
+    }
   }
 
   String _formatLiveTime(DateTime dt) {
@@ -87,6 +181,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final todayState = ref.watch(todayAttendanceProvider);
     final todayNotifier = ref.read(todayAttendanceProvider.notifier);
 
+    if (authState.status == AuthStatus.authenticated &&
+        !_locationPermissionPromptHandled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _promptLocationPermissionOnce();
+        }
+      });
+    }
+
     final user = authState.user;
     final String firstName;
     if (user != null && user.name.trim().isNotEmpty) {
@@ -107,13 +210,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final attendance = todayState.attendance;
     final hasCheckedIn = attendance?.checkInAt != null;
     final hasCheckedOut = attendance?.checkOutAt != null;
-    final checkInTime =
-        attendance?.formattedCheckIn ??
-        (!hasCheckedIn ? _formatLiveTime(_currentTime) : '--.--');
+    final checkInTime = attendance?.formattedCheckIn ?? '--.--';
 
     // Helper method to capture photo from camera and submit attendance
     Future<void> performAttendanceWithCamera(bool isCheckIn) async {
       try {
+        final hasLocationPermission = await _ensureLocationPermission();
+        if (!hasLocationPermission) return;
+
         final picker = ImagePicker();
         final pickedFile = await picker.pickImage(
           source: ImageSource.camera,

@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/location/location_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/error_view.dart';
@@ -14,7 +15,7 @@ class OfficeScreen extends ConsumerWidget {
   const OfficeScreen({super.key});
 
   static const String googleMapsUrl =
-      'https://maps.app.goo.gl/KGzZ2RMMp1i2Gnuf6';
+      'https://www.google.com/maps/search/?api=1&query=${LocationService.officeLatitude},${LocationService.officeLongitude}';
 
   Future<void> _openMaps() async {
     final uri = Uri.parse(googleMapsUrl);
@@ -36,7 +37,28 @@ class OfficeScreen extends ConsumerWidget {
             message: error.toString(),
             onRetry: () => ref.refresh(officeProvider),
           ),
-          data: (office) {
+          data: (offices) {
+            Office? selectedOffice;
+            for (final item in offices) {
+              if (item.isActive) {
+                selectedOffice = item;
+                break;
+              }
+            }
+            if (selectedOffice == null) {
+              return ErrorView(
+                message: 'Lokasi kantor aktif tidak tersedia.',
+                onRetry: () => ref.refresh(officeProvider),
+              );
+            }
+            final office = Office(
+              id: selectedOffice.id,
+              name: selectedOffice.name,
+              address: selectedOffice.address,
+              latitude: LocationService.officeLatitude,
+              longitude: LocationService.officeLongitude,
+              radiusMeters: LocationService.maxRadiusMeters.toInt(),
+            );
             return RefreshIndicator(
               color: AppColors.sidebarBg,
               backgroundColor: AppColors.white,
@@ -150,6 +172,19 @@ class OfficeScreen extends ConsumerWidget {
                             label: 'Titik koordinat',
                             value: office.formattedCoordinates,
                             isMonospace: true,
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Divider(
+                              height: 1,
+                              thickness: 0.5,
+                              color: AppColors.gray100,
+                            ),
+                          ),
+                          _OfficeDetailRow(
+                            icon: Icons.radar_rounded,
+                            label: 'Radius absensi',
+                            value: '${office.radiusMeters} m',
                           ),
                         ],
                       ),

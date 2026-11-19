@@ -120,7 +120,9 @@ class MockAttendanceRepository implements AttendanceRepository {
   }
 
   void _validateLocationRadius(double? lat, double? lng) {
-    if (lat == null && lng == null) return; // If omitted in test/mock, skip or assume within office
+    if (lat == null && lng == null) {
+      return; // If omitted in test/mock, skip or assume within office
+    }
     final userLat = lat ?? LocationService.officeLatitude;
     final userLng = lng ?? LocationService.officeLongitude;
     final distance = LocationService.calculateDistance(
@@ -134,13 +136,19 @@ class MockAttendanceRepository implements AttendanceRepository {
           ? '${(distance / 1000).toStringAsFixed(1)} km'
           : '${distance.toStringAsFixed(1)} m';
       throw ValidationError(
-        'Kamu berada di luar radius kantor ($distStr). Absen hanya dapat dilakukan dalam radius maksimal 15 m',
+        'Di luar jangkauan. Jarak Anda $distStr dari titik pusat.',
       );
     }
   }
 
   @override
-  Future<Attendance> checkIn({double? latitude, double? longitude, Uint8List? photoBytes}) async {
+  Future<Attendance> checkIn({
+    double? latitude,
+    double? longitude,
+    double? accuracyMeters,
+    bool isMocked = false,
+    Uint8List? photoBytes,
+  }) async {
     await Future.delayed(delay);
 
     if (simulateTimeout) {
@@ -148,7 +156,13 @@ class MockAttendanceRepository implements AttendanceRepository {
       throw const NetworkError();
     }
 
-    // Validasi radius lokasi (maksimal 15 meter)
+    if (isMocked) {
+      throw const ValidationError(
+        'Lokasi simulasi terdeteksi. Matikan aplikasi fake GPS untuk absen.',
+      );
+    }
+
+    // Validasi radius lokasi (maksimal 25 meter)
     _validateLocationRadius(latitude, longitude);
 
     final employeeId = await _getCurrentEmployeeId();
@@ -156,7 +170,9 @@ class MockAttendanceRepository implements AttendanceRepository {
 
     // Validasi hari Minggu: tidak bisa absen sama sekali
     if (now.weekday == DateTime.sunday) {
-      throw const ValidationError('Hari Minggu libur. Tidak dapat melakukan absensi');
+      throw const ValidationError(
+        'Hari Minggu libur. Tidak dapat melakukan absensi',
+      );
     }
 
     final todayStr = _formatWorkDate(now);
@@ -193,7 +209,13 @@ class MockAttendanceRepository implements AttendanceRepository {
   }
 
   @override
-  Future<Attendance> checkOut({double? latitude, double? longitude, Uint8List? photoBytes}) async {
+  Future<Attendance> checkOut({
+    double? latitude,
+    double? longitude,
+    double? accuracyMeters,
+    bool isMocked = false,
+    Uint8List? photoBytes,
+  }) async {
     await Future.delayed(delay);
 
     if (simulateTimeout) {
@@ -201,7 +223,13 @@ class MockAttendanceRepository implements AttendanceRepository {
       throw const NetworkError();
     }
 
-    // Validasi radius lokasi (maksimal 15 meter)
+    if (isMocked) {
+      throw const ValidationError(
+        'Lokasi simulasi terdeteksi. Matikan aplikasi fake GPS untuk absen.',
+      );
+    }
+
+    // Validasi radius lokasi (maksimal 25 meter)
     _validateLocationRadius(latitude, longitude);
 
     final employeeId = await _getCurrentEmployeeId();
@@ -209,7 +237,9 @@ class MockAttendanceRepository implements AttendanceRepository {
 
     // Validasi hari Minggu: tidak bisa absen sama sekali
     if (now.weekday == DateTime.sunday) {
-      throw const ValidationError('Hari Minggu libur. Tidak dapat melakukan absensi');
+      throw const ValidationError(
+        'Hari Minggu libur. Tidak dapat melakukan absensi',
+      );
     }
 
     final todayStr = _formatWorkDate(now);

@@ -6,10 +6,7 @@ import '../../data/models/attendance.dart';
 class StatusPill extends StatelessWidget {
   final AttendanceStatus status;
 
-  const StatusPill({
-    super.key,
-    required this.status,
-  });
+  const StatusPill({super.key, required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -43,10 +40,7 @@ class StatusPill extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
           Text(

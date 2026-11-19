@@ -9,32 +9,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('shows the live clock as check-in time before checking in', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          attendanceRepositoryProvider.overrideWithValue(
-            _FakeAttendanceRepository(null),
-          ),
-        ],
-        child: const MaterialApp(home: HomeScreen()),
-      ),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'shows dash for check-in before attendance and live clock separately',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            attendanceRepositoryProvider.overrideWithValue(
+              _FakeAttendanceRepository(null),
+            ),
+          ],
+          child: const MaterialApp(home: HomeScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is Text &&
-            RegExp(r'^\d{2}\.\d{2}$').hasMatch(widget.data ?? ''),
-      ),
-      findsNWidgets(2),
-    );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Text &&
+              RegExp(r'^\d{2}\.\d{2}$').hasMatch(widget.data ?? ''),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('--.--'), findsNWidgets(2));
 
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   testWidgets('keeps the recorded check-in time after checking in', (
     tester,
@@ -78,6 +80,8 @@ class _FakeAttendanceRepository implements AttendanceRepository {
   Future<Attendance> checkIn({
     double? latitude,
     double? longitude,
+    double? accuracyMeters,
+    bool isMocked = false,
     Uint8List? photoBytes,
   }) => throw UnimplementedError();
 
@@ -85,6 +89,8 @@ class _FakeAttendanceRepository implements AttendanceRepository {
   Future<Attendance> checkOut({
     double? latitude,
     double? longitude,
+    double? accuracyMeters,
+    bool isMocked = false,
     Uint8List? photoBytes,
   }) => throw UnimplementedError();
 

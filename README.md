@@ -69,12 +69,12 @@ UI layer tidak pernah memanggil `Dio` secara langsung, sehingga peralihan dilaku
      - **Minggu:** libur penuh, tidak dapat melakukan absensi masuk maupun pulang.
    - Penentuan status dihitung oleh server; aplikasi client hanya menerima dan menampilkan status dari response server.
 
-3. **Lokasi Kantor & Validasi Geofencing (Radius 15m):**
-   - **Koordinat Kantor:** Lintang `-7.254870`, Bujur `110.185027`
-   - **Batas Radius:** Maksimal **15 meter**.
-   - Absen masuk (check-in) dan absen pulang (check-out) yang dilakukan di luar radius 15 meter akan ditolak secara otomatis oleh sistem.
+3. **Lokasi Kantor & Validasi Geofencing (Radius 25m):**
+   - **Koordinat Kantor:** Lintang `-7.2548218409116085`, Bujur `110.1850344181774`
+   - **Batas Radius:** Maksimal **25 meter**.
+   - Absen masuk (check-in) dan absen pulang (check-out) yang dilakukan di luar radius 25 meter akan ditolak secara otomatis oleh sistem.
    - Sesuai instruksi assessment, endpoint kantor belum ada di spesifikasi resmi awal. Disediakan method terpisah `OfficeRepository.getOffice()` dengan komentar `TODO` untuk menyesuaikan endpoint jika backend Laravel sudah menyediakannya (`GET /api/office`).
-   - Tombol **"Buka di Maps"** meluncurkan URL Google Maps: `https://www.google.com/maps/search/?api=1&query=-7.254870,110.185027`.
+   - Tombol **"Buka di Maps"** meluncurkan URL Google Maps: `https://www.google.com/maps/search/?api=1&query=-7.2548218409116085,110.1850344181774`.
 
 4. **Autentikasi (ATT-06 & ATT-07):**
    - Identitas karyawan selalu diambil dari Bearer Token (Laravel Sanctum), client tidak pernah mengirim `employee_id` secara manual di body/parameter.

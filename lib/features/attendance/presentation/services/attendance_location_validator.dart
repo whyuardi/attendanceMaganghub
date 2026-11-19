@@ -1,4 +1,5 @@
 import 'package:geolocator/geolocator.dart';
+import '../../../../core/location/location_service.dart';
 import '../../data/models/attendance_evidence.dart';
 import '../../../office/data/models/office.dart';
 
@@ -13,8 +14,6 @@ class AttendanceLocationException implements Exception {
 
 class AttendanceLocationValidator {
   AttendanceLocationValidator._();
-
-  static const maximumDistanceMeters = 10.0;
 
   static double validateWithinRange({
     required AttendanceEvidence evidence,
@@ -56,31 +55,32 @@ class AttendanceLocationValidator {
       );
     }
 
-    final distanceMeters = activeOffices
-        .map(
-          (office) => Geolocator.distanceBetween(
-            evidence.latitude,
-            evidence.longitude,
-            office.latitude,
-            office.longitude,
-          ),
-        )
-        .reduce((a, b) => a < b ? a : b);
+    final nearestOffice = activeOffices.reduce((a, b) {
+      final distanceA = Geolocator.distanceBetween(
+        evidence.latitude,
+        evidence.longitude,
+        a.latitude,
+        a.longitude,
+      );
+      final distanceB = Geolocator.distanceBetween(
+        evidence.latitude,
+        evidence.longitude,
+        b.latitude,
+        b.longitude,
+      );
+      return distanceA < distanceB ? a : b;
+    });
+    final distanceMeters = Geolocator.distanceBetween(
+      evidence.latitude,
+      evidence.longitude,
+      nearestOffice.latitude,
+      nearestOffice.longitude,
+    );
+    const maximumDistanceMeters = LocationService.maxRadiusMeters;
 
     if (distanceMeters > maximumDistanceMeters) {
       throw AttendanceLocationException(
-        'Jarak Anda ${distanceMeters.toStringAsFixed(1)} m dari kantor. '
-        'Maksimal ${maximumDistanceMeters.toStringAsFixed(0)} m untuk absen.',
-      );
-    }
-
-    if (distanceMeters + accuracy > maximumDistanceMeters) {
-      throw AttendanceLocationException(
-        'Akurasi GPS belum cukup untuk memastikan Anda dalam jarak '
-        '${maximumDistanceMeters.toStringAsFixed(0)} m '
-        '(terukur ${distanceMeters.toStringAsFixed(1)} m, '
-        'akurasi ±${accuracy.toStringAsFixed(1)} m). '
-        'Cari sinyal GPS yang lebih baik lalu coba lagi.',
+        'Di luar jangkauan. Jarak Anda ${distanceMeters.toStringAsFixed(1)} m dari titik pusat.',
       );
     }
 

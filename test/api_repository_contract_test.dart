@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:attendance/core/storage/token_storage.dart';
 import 'package:attendance/features/attendance/data/models/attendance.dart';
-import 'package:attendance/features/attendance/data/models/attendance_evidence.dart';
 import 'package:attendance/features/attendance/data/repositories/api_attendance_repository.dart';
 import 'package:attendance/features/auth/data/repositories/api_auth_repository.dart';
 import 'package:attendance/features/office/data/repositories/api_office_repository.dart';
@@ -87,12 +86,14 @@ void main() {
       await photo.writeAsBytes([1, 2, 3]);
 
       final dio = _dioWithResponder((options, handler) {
-        expect(options.path, '/attendance/check-in');
+        expect(options.path, 'attendance/check-in');
         expect(options.method, 'POST');
         final formData = options.data as FormData;
         final fields = Map<String, String>.fromEntries(formData.fields);
         expect(fields['lat'], '-7.4296');
         expect(fields['lng'], '111.0095');
+        expect(fields['accuracy'], '4.5');
+        expect(fields['is_mocked'], 'true');
         expect(formData.files.single.key, 'photo');
         handler.resolve(
           Response(requestOptions: options, data: _attendanceJson),
@@ -100,11 +101,11 @@ void main() {
       });
 
       final attendance = await ApiAttendanceRepository(dio: dio).checkIn(
-        AttendanceEvidence(
-          photoPath: photo.path,
-          latitude: -7.4296,
-          longitude: 111.0095,
-        ),
+        latitude: -7.4296,
+        longitude: 111.0095,
+        accuracyMeters: 4.5,
+        isMocked: true,
+        photoBytes: await photo.readAsBytes(),
       );
 
       expect(attendance.id, 12);
