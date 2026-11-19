@@ -15,7 +15,7 @@ final officeRepositoryProvider = Provider<OfficeRepository>((ref) {
   }
 });
 
-final officeProvider = FutureProvider.autoDispose<List<Office>>((ref) async {
-  final repo = ref.watch(officeRepositoryProvider);
-  return await repo.getOffices();
+final officeProvider = FutureProvider.autoDispose<Office>((ref) async {
+  // Berpatokan penuh pada kode mobile (tidak menggunakan data API)
+  return Office.defaultOffice;
 });

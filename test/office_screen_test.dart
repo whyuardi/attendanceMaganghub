@@ -13,16 +13,14 @@ void main() {
       ProviderScope(
         overrides: [
           officeProvider.overrideWith(
-            (ref) async => const [
-              Office(
-                id: 1,
-                name: 'Kantor Pusat',
-                address: 'Jl. Contoh No. 10, Yogyakarta',
-                latitude: -7.4296,
-                longitude: 111.0095,
-                radiusMeters: 150,
-              ),
-            ],
+            (ref) async => const Office(
+              id: 1,
+              name: 'Kantor Pusat',
+              address: 'Jl. Contoh No. 10, Yogyakarta',
+              latitude: -7.2548218409116085,
+              longitude: 110.1850344181774,
+              radiusMeters: 25,
+            ),
           ),
         ],
         child: const MaterialApp(home: OfficeScreen()),

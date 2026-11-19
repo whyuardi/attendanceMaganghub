@@ -3,6 +3,7 @@ import '../../../../core/error/app_error.dart';
 import '../../../../core/location/location_service.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../models/attendance.dart';
+import '../models/attendance_evidence.dart';
 import 'attendance_repository.dart';
 
 class MockAttendanceRepository implements AttendanceRepository {
@@ -143,6 +144,7 @@ class MockAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<Attendance> checkIn({
+    AttendanceEvidence? evidence,
     double? latitude,
     double? longitude,
     double? accuracyMeters,
@@ -163,7 +165,9 @@ class MockAttendanceRepository implements AttendanceRepository {
     }
 
     // Validasi radius lokasi (maksimal 25 meter)
-    _validateLocationRadius(latitude, longitude);
+    final lat = evidence?.latitude ?? latitude;
+    final lng = evidence?.longitude ?? longitude;
+    _validateLocationRadius(lat, lng);
 
     final employeeId = await _getCurrentEmployeeId();
     final now = clock();
@@ -210,6 +214,7 @@ class MockAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<Attendance> checkOut({
+    AttendanceEvidence? evidence,
     double? latitude,
     double? longitude,
     double? accuracyMeters,
@@ -230,7 +235,9 @@ class MockAttendanceRepository implements AttendanceRepository {
     }
 
     // Validasi radius lokasi (maksimal 25 meter)
-    _validateLocationRadius(latitude, longitude);
+    final lat = evidence?.latitude ?? latitude;
+    final lng = evidence?.longitude ?? longitude;
+    _validateLocationRadius(lat, lng);
 
     final employeeId = await _getCurrentEmployeeId();
     final now = clock();

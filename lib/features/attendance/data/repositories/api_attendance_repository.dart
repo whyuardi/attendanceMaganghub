@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../../../../core/location/location_service.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/attendance.dart';
+import '../models/attendance_evidence.dart';
 import 'attendance_repository.dart';
 
 // Minimal valid 1x1 JPEG image bytes for attendance camera proof
@@ -163,16 +165,53 @@ class ApiAttendanceRepository implements AttendanceRepository {
 
   ApiAttendanceRepository({required this.dio});
 
+  Map<String, dynamic>? _extractAttendanceMap(dynamic data) {
+    if (data == null) return null;
+    if (data is! Map) return null;
+
+    final map = Map<String, dynamic>.from(data);
+
+    // 1. data['attendance']
+    if (map['attendance'] is Map && (map['attendance'] as Map).isNotEmpty) {
+      return Map<String, dynamic>.from(map['attendance'] as Map);
+    }
+
+    // 2. data['data']
+    if (map['data'] is Map && (map['data'] as Map).isNotEmpty) {
+      final inner = Map<String, dynamic>.from(map['data'] as Map);
+      if (inner['attendance'] is Map &&
+          (inner['attendance'] as Map).isNotEmpty) {
+        return Map<String, dynamic>.from(inner['attendance'] as Map);
+      }
+      if (inner.containsKey('id') ||
+          inner.containsKey('check_in_at') ||
+          inner.containsKey('work_date')) {
+        return inner;
+      }
+    }
+
+    // 3. Flat object (data itu sendiri)
+    if (map.containsKey('check_in_at') ||
+        map.containsKey('work_date') ||
+        map.containsKey('id')) {
+      if (map['id'] != null || map['check_in_at'] != null) {
+        return map;
+      }
+    }
+
+    return null;
+  }
+
   @override
   Future<Attendance?> getToday() async {
     try {
       final response = await dio.get('attendance/today');
       final data = response.data;
-      final attData = data['attendance'] ?? data['data'];
-      if (attData == null || (attData is Map && attData.isEmpty)) {
+      final attMap = _extractAttendanceMap(data);
+      if (attMap == null || attMap.isEmpty) {
         return null;
       }
-      return Attendance.fromJson(Map<String, dynamic>.from(attData as Map));
+      return Attendance.fromJson(attMap);
     } catch (e) {
       throw mapDioExceptionToAppError(e);
     }
@@ -180,6 +219,7 @@ class ApiAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<Attendance> checkIn({
+    AttendanceEvidence? evidence,
     double? latitude,
     double? longitude,
     double? accuracyMeters,
@@ -187,9 +227,17 @@ class ApiAttendanceRepository implements AttendanceRepository {
     Uint8List? photoBytes,
   }) async {
     try {
-      final lat = latitude ?? LocationService.officeLatitude;
-      final lng = longitude ?? LocationService.officeLongitude;
-      final bytes = photoBytes ?? _defaultPhotoBytes;
+      final lat =
+          evidence?.latitude ?? latitude ?? LocationService.officeLatitude;
+      final lng =
+          evidence?.longitude ?? longitude ?? LocationService.officeLongitude;
+      Uint8List bytes = photoBytes ?? _defaultPhotoBytes;
+      if (evidence != null) {
+        final photoFile = File(evidence.photoPath);
+        if (photoFile.existsSync()) {
+          bytes = await photoFile.readAsBytes();
+        }
+      }
 
       // Backend menggunakan multer upload (field 'photo', 'lat', 'lng')
       final formData = FormData.fromMap({
@@ -208,8 +256,10 @@ class ApiAttendanceRepository implements AttendanceRepository {
 
       final response = await dio.post('attendance/check-in', data: formData);
       final data = response.data;
-      final attData = data['data'] ?? data['attendance'] ?? data;
-      return Attendance.fromJson(Map<String, dynamic>.from(attData as Map));
+      final attMap =
+          _extractAttendanceMap(data) ??
+          (data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{});
+      return Attendance.fromJson(attMap);
     } catch (e) {
       throw mapDioExceptionToAppError(e);
     }
@@ -217,6 +267,7 @@ class ApiAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<Attendance> checkOut({
+    AttendanceEvidence? evidence,
     double? latitude,
     double? longitude,
     double? accuracyMeters,
@@ -224,9 +275,17 @@ class ApiAttendanceRepository implements AttendanceRepository {
     Uint8List? photoBytes,
   }) async {
     try {
-      final lat = latitude ?? LocationService.officeLatitude;
-      final lng = longitude ?? LocationService.officeLongitude;
-      final bytes = photoBytes ?? _defaultPhotoBytes;
+      final lat =
+          evidence?.latitude ?? latitude ?? LocationService.officeLatitude;
+      final lng =
+          evidence?.longitude ?? longitude ?? LocationService.officeLongitude;
+      Uint8List bytes = photoBytes ?? _defaultPhotoBytes;
+      if (evidence != null) {
+        final photoFile = File(evidence.photoPath);
+        if (photoFile.existsSync()) {
+          bytes = await photoFile.readAsBytes();
+        }
+      }
 
       final formData = FormData.fromMap({
         'lat': lat,
@@ -244,8 +303,10 @@ class ApiAttendanceRepository implements AttendanceRepository {
 
       final response = await dio.post('attendance/check-out', data: formData);
       final data = response.data;
-      final attData = data['data'] ?? data['attendance'] ?? data;
-      return Attendance.fromJson(Map<String, dynamic>.from(attData as Map));
+      final attMap =
+          _extractAttendanceMap(data) ??
+          (data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{});
+      return Attendance.fromJson(attMap);
     } catch (e) {
       throw mapDioExceptionToAppError(e);
     }

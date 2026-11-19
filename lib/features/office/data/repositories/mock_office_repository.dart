@@ -22,4 +22,10 @@ class MockOfficeRepository implements OfficeRepository {
       ),
     ];
   }
+
+  @override
+  Future<Office> getOffice() async {
+    final offices = await getOffices();
+    return offices.first;
+  }
 }

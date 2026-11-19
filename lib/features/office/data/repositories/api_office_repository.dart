@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../../../../core/error/app_error.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/office.dart';
 import 'office_repository.dart';
@@ -28,5 +29,14 @@ class ApiOfficeRepository implements OfficeRepository {
     } catch (e) {
       throw mapDioExceptionToAppError(e);
     }
+  }
+
+  @override
+  Future<Office> getOffice() async {
+    final offices = await getOffices();
+    if (offices.isNotEmpty) {
+      return offices.first;
+    }
+    throw const UnknownError('Data kantor tidak ditemukan');
   }
 }

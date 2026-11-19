@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:attendance/features/attendance/data/models/attendance.dart';
+import 'package:attendance/features/attendance/data/models/attendance_evidence.dart';
 import 'package:attendance/features/attendance/data/repositories/attendance_repository.dart';
 import 'package:attendance/features/attendance/presentation/providers/attendance_provider.dart';
 import 'package:attendance/features/attendance/presentation/screens/home_screen.dart';
@@ -78,6 +79,7 @@ class _FakeAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<Attendance> checkIn({
+    AttendanceEvidence? evidence,
     double? latitude,
     double? longitude,
     double? accuracyMeters,
@@ -87,6 +89,7 @@ class _FakeAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<Attendance> checkOut({
+    AttendanceEvidence? evidence,
     double? latitude,
     double? longitude,
     double? accuracyMeters,

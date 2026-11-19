@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:attendance/features/attendance/data/models/attendance.dart';
+import 'package:attendance/features/attendance/data/models/attendance_evidence.dart';
 import 'package:attendance/features/attendance/data/repositories/attendance_repository.dart';
 import 'package:attendance/features/attendance/presentation/providers/attendance_provider.dart';
 import 'package:attendance/features/attendance/presentation/screens/history_screen.dart';
@@ -14,6 +15,10 @@ void main() {
   testWidgets('filters history by date and can restore all attendance', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
     final today = DateTime.now();
     final oldDate = DateTime(2000, 1, 1);
     final history = [
@@ -54,7 +59,7 @@ void main() {
     expect(find.byType(AttendanceListItem), findsNWidgets(2));
     expect(find.byIcon(Icons.history_rounded), findsNothing);
 
-    await tester.tap(find.byType(OutlinedButton));
+    await tester.tap(find.text('Filter tanggal'));
     await tester.pumpAndSettle();
     expect(find.byType(DatePickerDialog), findsOneWidget);
 
@@ -91,6 +96,7 @@ class _FakeAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<Attendance> checkIn({
+    AttendanceEvidence? evidence,
     double? latitude,
     double? longitude,
     double? accuracyMeters,
@@ -100,6 +106,7 @@ class _FakeAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<Attendance> checkOut({
+    AttendanceEvidence? evidence,
     double? latitude,
     double? longitude,
     double? accuracyMeters,

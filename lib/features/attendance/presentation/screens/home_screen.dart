@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/location/location_service.dart';
 import '../../../../shared/widgets/loading_view.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/attendance.dart';
@@ -31,6 +32,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (user == null || user.name.trim().isEmpty) {
         ref.read(authNotifierProvider.notifier).checkAuthStatus();
       }
+      ref.read(todayAttendanceProvider.notifier).loadToday();
     });
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
@@ -214,6 +216,73 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     // Helper method to capture photo from camera and submit attendance
     Future<void> performAttendanceWithCamera(bool isCheckIn) async {
+      // Validasi waktu sebelum membuka kamera untuk absen pulang (Opsi A)
+      if (!isCheckIn) {
+        final now = DateTime.now();
+        if (now.weekday == DateTime.sunday) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Hari Minggu libur. Tidak dapat melakukan absensi.'),
+              backgroundColor: AppColors.statusRed,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+
+        if (now.weekday >= DateTime.monday && now.weekday <= DateTime.friday) {
+          if (now.hour < 17) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Belum waktunya absen pulang. Absen pulang hari Senin—Jumat baru dapat dilakukan mulai pukul 17.00 WIB.',
+                ),
+                backgroundColor: AppColors.statusRed,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            return;
+          }
+        }
+
+        if (now.weekday == DateTime.saturday) {
+          if (now.hour < 16) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Belum waktunya absen pulang. Absen pulang hari Sabtu baru dapat dilakukan mulai pukul 16.00 WIB.',
+                ),
+                backgroundColor: AppColors.statusRed,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            return;
+          }
+        }
+      }
+
+      // Validasi lokasi dan radius mobile (maks 15 meter) sebelum membuka kamera
+      try {
+        final locationService = ref.read(locationServiceProvider);
+        final pos = await locationService.getCurrentPosition();
+        await locationService.verifyRadius(
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+        );
+      } catch (e) {
+        if (context.mounted) {
+          final msg = e.toString().replaceAll('Exception: ', '').replaceAll('ValidationError: ', '');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: AppColors.statusRed,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+
       try {
         final hasLocationPermission = await _ensureLocationPermission();
         if (!hasLocationPermission) return;

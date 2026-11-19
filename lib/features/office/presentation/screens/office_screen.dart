@@ -37,28 +37,13 @@ class OfficeScreen extends ConsumerWidget {
             message: error.toString(),
             onRetry: () => ref.refresh(officeProvider),
           ),
-          data: (offices) {
-            Office? selectedOffice;
-            for (final item in offices) {
-              if (item.isActive) {
-                selectedOffice = item;
-                break;
-              }
-            }
-            if (selectedOffice == null) {
+          data: (office) {
+            if (!office.isActive) {
               return ErrorView(
                 message: 'Lokasi kantor aktif tidak tersedia.',
                 onRetry: () => ref.refresh(officeProvider),
               );
             }
-            final office = Office(
-              id: selectedOffice.id,
-              name: selectedOffice.name,
-              address: selectedOffice.address,
-              latitude: LocationService.officeLatitude,
-              longitude: LocationService.officeLongitude,
-              radiusMeters: LocationService.maxRadiusMeters.toInt(),
-            );
             return RefreshIndicator(
               color: AppColors.sidebarBg,
               backgroundColor: AppColors.white,

@@ -1,7 +1,9 @@
 import '../models/office.dart';
 
 abstract class OfficeRepository {
-  /// TODO: Endpoint office belum ada di spesifikasi resmi assessment.
-  /// Method ini disiapkan untuk disesuaikan saat backend Laravel menyediakan endpoint GET /api/office.
+  /// Mendapatkan kantor utama
+  Future<Office> getOffice();
+
+  /// Mendapatkan daftar semua kantor aktif
   Future<List<Office>> getOffices();
 }
