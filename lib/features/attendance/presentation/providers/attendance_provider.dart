@@ -110,6 +110,17 @@ class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
     double? longitude,
     Uint8List? photoBytes,
   }) async {
+    final existingCheckIn = state.attendance?.checkInAt;
+    if (existingCheckIn != null) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage:
+            'Kamu sudah absen masuk hari ini pukul ${state.attendance!.formattedCheckIn}',
+        clearSuccess: true,
+      );
+      return false;
+    }
+
     state = state.copyWith(
       isSubmitting: true,
       clearError: true,
@@ -170,6 +181,17 @@ class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
     double? longitude,
     Uint8List? photoBytes,
   }) async {
+    final existingCheckOut = state.attendance?.checkOutAt;
+    if (existingCheckOut != null) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage:
+            'Kamu sudah absen pulang hari ini pukul ${state.attendance!.formattedCheckOut}',
+        clearSuccess: true,
+      );
+      return false;
+    }
+
     final now = DateTime.now();
 
     // Validasi hari Minggu

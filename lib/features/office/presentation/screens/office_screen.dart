@@ -14,13 +14,41 @@ import '../providers/office_provider.dart';
 class OfficeScreen extends ConsumerWidget {
   const OfficeScreen({super.key});
 
-  static const String googleMapsUrl =
-      'https://www.google.com/maps/search/?api=1&query=${LocationService.officeLatitude},${LocationService.officeLongitude}';
+  Future<void> _openMaps(
+    BuildContext context,
+    WidgetRef ref,
+    Office office,
+  ) async {
+    try {
+      final position = await ref
+          .read(locationServiceProvider)
+          .getCurrentPosition();
+      final uri = Uri.https('www.google.com', '/maps/dir/', {
+        'api': '1',
+        'origin': '${position.latitude},${position.longitude}',
+        'destination': '${office.latitude},${office.longitude}',
+        'travelmode': 'driving',
+      });
 
-  Future<void> _openMaps() async {
-    final uri = Uri.parse(googleMapsUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google Maps tidak dapat dibuka.')),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Gagal membuka peta: ${error.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -83,7 +111,10 @@ class OfficeScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    _OfficeMapPreview(office: office, onTap: _openMaps),
+                    _OfficeMapPreview(
+                      office: office,
+                      onTap: () => _openMaps(context, ref, office),
+                    ),
                     const SizedBox(height: 20),
                     Container(
                       width: double.infinity,
@@ -179,7 +210,7 @@ class OfficeScreen extends ConsumerWidget {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _openMaps,
+                        onPressed: () => _openMaps(context, ref, office),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.sidebarBg,
                           foregroundColor: AppColors.white,

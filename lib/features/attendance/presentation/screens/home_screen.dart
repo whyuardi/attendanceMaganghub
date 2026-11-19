@@ -12,6 +12,8 @@ import '../../data/models/attendance.dart';
 import '../providers/attendance_provider.dart';
 import '../widgets/status_pill.dart';
 
+enum _AttendanceAction { checkIn, checkOut }
+
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -23,6 +25,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   late Timer _timer;
   DateTime _currentTime = DateTime.now();
   bool _locationPermissionPromptHandled = false;
+  bool _isOpeningCamera = false;
+  _AttendanceAction? _selectedAttendanceAction;
 
   @override
   void initState() {
@@ -216,127 +220,171 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     // Helper method to capture photo from camera and submit attendance
     Future<void> performAttendanceWithCamera(bool isCheckIn) async {
-      // Validasi waktu sebelum membuka kamera untuk absen pulang (Opsi A)
-      if (!isCheckIn) {
-        final now = DateTime.now();
-        if (now.weekday == DateTime.sunday) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Hari Minggu libur. Tidak dapat melakukan absensi.'),
-              backgroundColor: AppColors.statusRed,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          return;
-        }
+      if (_isOpeningCamera) return;
 
-        if (now.weekday >= DateTime.monday && now.weekday <= DateTime.friday) {
-          if (now.hour < 17) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Belum waktunya absen pulang. Absen pulang hari Senin—Jumat baru dapat dilakukan mulai pukul 17.00 WIB.',
-                ),
-                backgroundColor: AppColors.statusRed,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-            return;
-          }
-        }
+      setState(() {
+        _isOpeningCamera = true;
+      });
 
-        if (now.weekday == DateTime.saturday) {
-          if (now.hour < 16) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Belum waktunya absen pulang. Absen pulang hari Sabtu baru dapat dilakukan mulai pukul 16.00 WIB.',
-                ),
-                backgroundColor: AppColors.statusRed,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-            return;
-          }
-        }
-      }
-
-      // Validasi lokasi dan radius mobile (maks 15 meter) sebelum membuka kamera
       try {
-        final locationService = ref.read(locationServiceProvider);
-        final pos = await locationService.getCurrentPosition();
-        await locationService.verifyRadius(
-          latitude: pos.latitude,
-          longitude: pos.longitude,
-        );
-      } catch (e) {
-        if (context.mounted) {
-          final msg = e.toString().replaceAll('Exception: ', '').replaceAll('ValidationError: ', '');
+        if (isCheckIn && hasCheckedIn) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(msg),
+              content: Text(
+                'Kamu sudah absen masuk hari ini pukul ${attendance!.formattedCheckIn}',
+              ),
               backgroundColor: AppColors.statusRed,
               behavior: SnackBarBehavior.floating,
             ),
           );
-        }
-        return;
-      }
-
-      try {
-        final hasLocationPermission = await _ensureLocationPermission();
-        if (!hasLocationPermission) return;
-
-        final picker = ImagePicker();
-        final pickedFile = await picker.pickImage(
-          source: ImageSource.camera,
-          preferredCameraDevice: CameraDevice.front,
-          imageQuality: 80,
-          maxWidth: 1024,
-          maxHeight: 1024,
-        );
-
-        if (pickedFile == null) {
-          // Pengguna membatalkan pengambilan foto kamera
           return;
         }
 
-        final photoBytes = await pickedFile.readAsBytes();
-        final success = isCheckIn
-            ? await todayNotifier.checkIn(photoBytes: photoBytes)
-            : await todayNotifier.checkOut(photoBytes: photoBytes);
-
-        if (success) {
-          ref.invalidate(attendanceHistoryProvider);
-        }
-      } catch (e) {
-        if (context.mounted) {
+        if (!isCheckIn && hasCheckedOut) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Kamera tidak dapat diakses: $e')),
+            SnackBar(
+              content: Text(
+                'Kamu sudah absen pulang hari ini pukul ${attendance!.formattedCheckOut}',
+              ),
+              backgroundColor: AppColors.statusRed,
+              behavior: SnackBarBehavior.floating,
+            ),
           );
+          return;
+        }
+
+        if (!isCheckIn && !hasCheckedIn) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Kamu belum absen masuk hari ini'),
+              backgroundColor: AppColors.statusRed,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+
+        // Validasi waktu sebelum membuka kamera untuk absen pulang (Opsi A)
+        if (!isCheckIn) {
+          final now = DateTime.now();
+          if (now.weekday == DateTime.sunday) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Hari Minggu libur. Tidak dapat melakukan absensi.',
+                ),
+                backgroundColor: AppColors.statusRed,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            return;
+          }
+
+          if (now.weekday >= DateTime.monday &&
+              now.weekday <= DateTime.friday) {
+            if (now.hour < 17) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Belum waktunya absen pulang. Absen pulang hari Senin—Jumat baru dapat dilakukan mulai pukul 17.00 WIB.',
+                  ),
+                  backgroundColor: AppColors.statusRed,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+              return;
+            }
+          }
+
+          if (now.weekday == DateTime.saturday) {
+            if (now.hour < 16) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Belum waktunya absen pulang. Absen pulang hari Sabtu baru dapat dilakukan mulai pukul 16.00 WIB.',
+                  ),
+                  backgroundColor: AppColors.statusRed,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+              return;
+            }
+          }
+        }
+
+        // Validasi lokasi dan radius mobile (maks 15 meter) sebelum membuka kamera
+        try {
+          final locationService = ref.read(locationServiceProvider);
+          final pos = await locationService.getCurrentPosition();
+          await locationService.verifyRadius(
+            latitude: pos.latitude,
+            longitude: pos.longitude,
+          );
+        } catch (e) {
+          if (context.mounted) {
+            final msg = e
+                .toString()
+                .replaceAll('Exception: ', '')
+                .replaceAll('ValidationError: ', '');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(msg),
+                backgroundColor: AppColors.statusRed,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return;
+        }
+
+        try {
+          final hasLocationPermission = await _ensureLocationPermission();
+          if (!hasLocationPermission) return;
+
+          final picker = ImagePicker();
+          final pickedFile = await picker.pickImage(
+            source: ImageSource.camera,
+            preferredCameraDevice: CameraDevice.front,
+            imageQuality: 80,
+            maxWidth: 1024,
+            maxHeight: 1024,
+          );
+
+          if (pickedFile == null) {
+            // Pengguna membatalkan pengambilan foto kamera
+            return;
+          }
+
+          final photoBytes = await pickedFile.readAsBytes();
+          final success = isCheckIn
+              ? await todayNotifier.checkIn(photoBytes: photoBytes)
+              : await todayNotifier.checkOut(photoBytes: photoBytes);
+
+          if (success) {
+            ref.invalidate(attendanceHistoryProvider);
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Kamera tidak dapat diakses: $e')),
+            );
+          }
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isOpeningCamera = false;
+          });
         }
       }
     }
 
-    // Determine button label and action
-    final String buttonText;
-    final VoidCallback? buttonAction;
-    final bool isButtonDisabled;
-
-    if (!hasCheckedIn) {
-      buttonText = 'Absen masuk';
-      buttonAction = () => performAttendanceWithCamera(true);
-      isButtonDisabled = false;
-    } else if (!hasCheckedOut) {
-      buttonText = 'Absen pulang';
-      buttonAction = () => performAttendanceWithCamera(false);
-      isButtonDisabled = false;
-    } else {
-      // Both IN and OUT completed
-      buttonText = 'Selesai hari ini';
-      buttonAction = null;
-      isButtonDisabled = true;
-    }
+    final selectedAttendanceAction =
+        _selectedAttendanceAction ??
+        (hasCheckedIn ? _AttendanceAction.checkOut : _AttendanceAction.checkIn);
+    final buttonText = selectedAttendanceAction == _AttendanceAction.checkIn
+        ? 'Absen masuk'
+        : 'Absen pulang';
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
@@ -551,13 +599,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
 
                 const SizedBox(height: 28),
+                DropdownButtonFormField<_AttendanceAction>(
+                  key: const Key('attendance-action-dropdown'),
+                  initialValue: selectedAttendanceAction,
+                  decoration: const InputDecoration(
+                    labelText: 'Pilih jenis absensi',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: _AttendanceAction.checkIn,
+                      child: Text('IN - Absen masuk'),
+                    ),
+                    DropdownMenuItem(
+                      value: _AttendanceAction.checkOut,
+                      child: Text('OUT - Absen pulang'),
+                    ),
+                  ],
+                  onChanged: todayState.isSubmitting
+                      ? null
+                      : (action) {
+                          if (action != null) {
+                            setState(() {
+                              _selectedAttendanceAction = action;
+                            });
+                          }
+                        },
+                ),
+                const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: isButtonDisabled || todayState.isSubmitting
+                    key: const Key('attendance-action-button'),
+                    onPressed: todayState.isSubmitting || _isOpeningCamera
                         ? null
-                        : buttonAction,
+                        : () => performAttendanceWithCamera(
+                            selectedAttendanceAction ==
+                                _AttendanceAction.checkIn,
+                          ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.sidebarBg,
                       foregroundColor: AppColors.white,
@@ -568,7 +648,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         borderRadius: BorderRadius.circular(18),
                       ),
                     ),
-                    child: todayState.isSubmitting
+                    child: todayState.isSubmitting || _isOpeningCamera
                         ? const SizedBox(
                             width: 22,
                             height: 22,
@@ -583,9 +663,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                isButtonDisabled
-                                    ? Icons.check_circle_outline_rounded
-                                    : Icons.camera_alt_outlined,
+                                Icons.camera_alt_outlined,
                                 color: AppColors.primaryGold,
                                 size: 20,
                               ),

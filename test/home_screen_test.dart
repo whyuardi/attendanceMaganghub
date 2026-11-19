@@ -67,6 +67,86 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('shows duplicate check-in message for selected IN', (
+    tester,
+  ) async {
+    final checkInAt = DateTime(2026, 11, 18, 8, 5);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          attendanceRepositoryProvider.overrideWithValue(
+            _FakeAttendanceRepository(
+              Attendance(
+                id: 1,
+                employeeId: 1,
+                workDate: '2026-11-18',
+                checkInAt: checkInAt,
+                rawStatus: 'tepat_waktu',
+              ),
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: HomeScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(
+      find.byKey(const Key('attendance-action-dropdown')),
+    );
+    await tester.tap(find.byKey(const Key('attendance-action-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('IN - Absen masuk'));
+    await tester.pumpAndSettle();
+
+    final actionButton = find.byKey(const Key('attendance-action-button'));
+    await tester.ensureVisible(actionButton);
+    await tester.tap(actionButton);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Kamu sudah absen masuk hari ini pukul 08.05'),
+      findsOneWidget,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('shows duplicate check-out message when OUT is selected', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          attendanceRepositoryProvider.overrideWithValue(
+            _FakeAttendanceRepository(
+              Attendance(
+                id: 1,
+                employeeId: 1,
+                workDate: '2026-11-18',
+                checkInAt: DateTime(2026, 11, 18, 8, 5),
+                checkOutAt: DateTime(2026, 11, 18, 17, 15),
+                rawStatus: 'tepat_waktu',
+              ),
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: HomeScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final actionButton = find.byKey(const Key('attendance-action-button'));
+    await tester.ensureVisible(actionButton);
+    await tester.tap(actionButton);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Kamu sudah absen pulang hari ini pukul 17.15'),
+      findsOneWidget,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }
 
 class _FakeAttendanceRepository implements AttendanceRepository {
