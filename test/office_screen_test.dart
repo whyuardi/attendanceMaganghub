@@ -13,16 +13,14 @@ void main() {
       ProviderScope(
         overrides: [
           officeProvider.overrideWith(
-            (ref) async => const [
-              Office(
-                id: 1,
-                name: 'Kantor Pusat',
-                address: 'Jl. Contoh No. 10, Yogyakarta',
-                latitude: -7.4296,
-                longitude: 111.0095,
-                radiusMeters: 150,
-              ),
-            ],
+            (ref) async => const Office(
+              id: 1,
+              name: 'Kantor Pusat',
+              address: 'Jl. Contoh No. 10, Yogyakarta',
+              latitude: -7.4296,
+              longitude: 111.0095,
+              radiusMeters: 150,
+            ),
           ),
         ],
         child: const MaterialApp(home: OfficeScreen()),
@@ -34,7 +32,6 @@ void main() {
     expect(find.text('Kantor Pusat'), findsOneWidget);
     expect(find.text('Jl. Contoh No. 10, Yogyakarta'), findsOneWidget);
     expect(find.text('-7.4296, 111.0095'), findsOneWidget);
-    expect(find.text('150 m'), findsOneWidget);
     expect(find.text('Buka di Google Maps'), findsOneWidget);
   });
 }

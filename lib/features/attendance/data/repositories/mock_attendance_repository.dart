@@ -3,6 +3,7 @@ import '../../../../core/error/app_error.dart';
 import '../../../../core/location/location_service.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../models/attendance.dart';
+import '../models/attendance_evidence.dart';
 import 'attendance_repository.dart';
 
 class MockAttendanceRepository implements AttendanceRepository {
@@ -140,7 +141,12 @@ class MockAttendanceRepository implements AttendanceRepository {
   }
 
   @override
-  Future<Attendance> checkIn({double? latitude, double? longitude, Uint8List? photoBytes}) async {
+  Future<Attendance> checkIn({
+    AttendanceEvidence? evidence,
+    double? latitude,
+    double? longitude,
+    Uint8List? photoBytes,
+  }) async {
     await Future.delayed(delay);
 
     if (simulateTimeout) {
@@ -148,8 +154,11 @@ class MockAttendanceRepository implements AttendanceRepository {
       throw const NetworkError();
     }
 
+    final lat = evidence?.latitude ?? latitude;
+    final lng = evidence?.longitude ?? longitude;
+
     // Validasi radius lokasi (maksimal 15 meter)
-    _validateLocationRadius(latitude, longitude);
+    _validateLocationRadius(lat, lng);
 
     final employeeId = await _getCurrentEmployeeId();
     final now = clock();
@@ -193,7 +202,12 @@ class MockAttendanceRepository implements AttendanceRepository {
   }
 
   @override
-  Future<Attendance> checkOut({double? latitude, double? longitude, Uint8List? photoBytes}) async {
+  Future<Attendance> checkOut({
+    AttendanceEvidence? evidence,
+    double? latitude,
+    double? longitude,
+    Uint8List? photoBytes,
+  }) async {
     await Future.delayed(delay);
 
     if (simulateTimeout) {
@@ -201,8 +215,11 @@ class MockAttendanceRepository implements AttendanceRepository {
       throw const NetworkError();
     }
 
+    final lat = evidence?.latitude ?? latitude;
+    final lng = evidence?.longitude ?? longitude;
+
     // Validasi radius lokasi (maksimal 15 meter)
-    _validateLocationRadius(latitude, longitude);
+    _validateLocationRadius(lat, lng);
 
     final employeeId = await _getCurrentEmployeeId();
     final now = clock();

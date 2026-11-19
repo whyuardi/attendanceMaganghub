@@ -19,4 +19,9 @@ class MockOfficeRepository implements OfficeRepository {
       radiusM: 15,
     );
   }
+
+  @override
+  Future<List<Office>> getOffices() async {
+    return [await getOffice()];
+  }
 }

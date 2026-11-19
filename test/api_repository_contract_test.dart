@@ -24,7 +24,7 @@ Dio _dioWithResponder(
   void Function(RequestOptions options, RequestInterceptorHandler handler)
   responder,
 ) {
-  final dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000/api'));
+  final dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000/api/'));
   dio.interceptors.add(InterceptorsWrapper(onRequest: responder));
   return dio;
 }
@@ -33,7 +33,7 @@ void main() {
   group('Project1 API contract', () {
     test('today endpoint accepts the backend no-attendance response', () async {
       final dio = _dioWithResponder((options, handler) {
-        expect(options.path, '/attendance/today');
+        expect(options.path.replaceAll(RegExp(r'^/'), ''), 'attendance/today');
         handler.resolve(
           Response(
             requestOptions: options,
@@ -56,7 +56,7 @@ void main() {
       'history reads the API data list and uppercase server status',
       () async {
         final dio = _dioWithResponder((options, handler) {
-          expect(options.path, '/attendance/history');
+          expect(options.path.replaceAll(RegExp(r'^/'), ''), 'attendance/history');
           handler.resolve(
             Response(
               requestOptions: options,
@@ -87,7 +87,7 @@ void main() {
       await photo.writeAsBytes([1, 2, 3]);
 
       final dio = _dioWithResponder((options, handler) {
-        expect(options.path, '/attendance/check-in');
+        expect(options.path.replaceAll(RegExp(r'^/'), ''), 'attendance/check-in');
         expect(options.method, 'POST');
         final formData = options.data as FormData;
         final fields = Map<String, String>.fromEntries(formData.fields);
@@ -100,7 +100,7 @@ void main() {
       });
 
       final attendance = await ApiAttendanceRepository(dio: dio).checkIn(
-        AttendanceEvidence(
+        evidence: AttendanceEvidence(
           photoPath: photo.path,
           latitude: -7.4296,
           longitude: 111.0095,
@@ -113,7 +113,7 @@ void main() {
 
     test('office endpoint reads the active offices list', () async {
       final dio = _dioWithResponder((options, handler) {
-        expect(options.path, '/offices');
+        expect(options.path.replaceAll(RegExp(r'^/'), ''), 'offices');
         handler.resolve(
           Response(
             requestOptions: options,
@@ -145,8 +145,9 @@ void main() {
       final storage = TokenStorage.inMemory(null);
       final requestedPaths = <String>[];
       final dio = _dioWithResponder((options, handler) {
-        requestedPaths.add(options.path);
-        if (options.path == '/login') {
+        final cleanPath = options.path.replaceAll(RegExp(r'^/'), '');
+        requestedPaths.add(cleanPath);
+        if (cleanPath == 'login') {
           handler.resolve(
             Response(
               requestOptions: options,
@@ -187,7 +188,7 @@ void main() {
         tokenStorage: storage,
       ).login('dina@example.com', 'test-password');
 
-      expect(requestedPaths, ['/login', '/me']);
+      expect(requestedPaths, ['login', 'me']);
       expect(await storage.getToken(), 'test-jwt');
       expect(user.name, 'Dina');
       expect(user.employeeCode, 'EMP003');

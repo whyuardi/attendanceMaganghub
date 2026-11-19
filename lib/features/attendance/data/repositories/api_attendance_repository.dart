@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../../../../core/location/location_service.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/attendance.dart';
+import '../models/attendance_evidence.dart';
 import 'attendance_repository.dart';
 
 // Minimal valid 1x1 JPEG image bytes for attendance camera proof
@@ -43,11 +45,22 @@ class ApiAttendanceRepository implements AttendanceRepository {
   }
 
   @override
-  Future<Attendance> checkIn({double? latitude, double? longitude, Uint8List? photoBytes}) async {
+  Future<Attendance> checkIn({
+    AttendanceEvidence? evidence,
+    double? latitude,
+    double? longitude,
+    Uint8List? photoBytes,
+  }) async {
     try {
-      final lat = latitude ?? LocationService.officeLatitude;
-      final lng = longitude ?? LocationService.officeLongitude;
-      final bytes = photoBytes ?? _defaultPhotoBytes;
+      final lat = evidence?.latitude ?? latitude ?? LocationService.officeLatitude;
+      final lng = evidence?.longitude ?? longitude ?? LocationService.officeLongitude;
+      Uint8List bytes = photoBytes ?? _defaultPhotoBytes;
+      if (evidence != null) {
+        final photoFile = File(evidence.photoPath);
+        if (photoFile.existsSync()) {
+          bytes = await photoFile.readAsBytes();
+        }
+      }
 
       // Backend menggunakan multer upload (field 'photo', 'lat', 'lng')
       final formData = FormData.fromMap({
@@ -75,11 +88,22 @@ class ApiAttendanceRepository implements AttendanceRepository {
   }
 
   @override
-  Future<Attendance> checkOut({double? latitude, double? longitude, Uint8List? photoBytes}) async {
+  Future<Attendance> checkOut({
+    AttendanceEvidence? evidence,
+    double? latitude,
+    double? longitude,
+    Uint8List? photoBytes,
+  }) async {
     try {
-      final lat = latitude ?? LocationService.officeLatitude;
-      final lng = longitude ?? LocationService.officeLongitude;
-      final bytes = photoBytes ?? _defaultPhotoBytes;
+      final lat = evidence?.latitude ?? latitude ?? LocationService.officeLatitude;
+      final lng = evidence?.longitude ?? longitude ?? LocationService.officeLongitude;
+      Uint8List bytes = photoBytes ?? _defaultPhotoBytes;
+      if (evidence != null) {
+        final photoFile = File(evidence.photoPath);
+        if (photoFile.existsSync()) {
+          bytes = await photoFile.readAsBytes();
+        }
+      }
 
       final formData = FormData.fromMap({
         'lat': lat,

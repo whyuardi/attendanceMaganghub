@@ -5,6 +5,7 @@ class Office {
   final double latitude;
   final double longitude;
   final int radiusM;
+  final bool isActive;
 
   const Office({
     required this.id,
@@ -12,8 +13,10 @@ class Office {
     required this.address,
     required this.latitude,
     required this.longitude,
-    this.radiusM = 15,
-  });
+    int? radiusMeters,
+    int radiusM = 15,
+    this.isActive = true,
+  }) : radiusM = radiusMeters ?? radiusM;
 
   factory Office.fromJson(Map<String, dynamic> json) {
     double parseDouble(dynamic value) {
@@ -21,6 +24,11 @@ class Office {
       if (value is String) return double.tryParse(value) ?? 0.0;
       return 0.0;
     }
+
+    final rawIsActive = json['is_active'] ?? json['isActive'];
+    final isActive = rawIsActive == null
+        ? true
+        : (rawIsActive == 1 || rawIsActive == true || rawIsActive == '1');
 
     return Office(
       id: json['id'] is int ? json['id'] as int : int.tryParse(json['id'].toString()) ?? 0,
@@ -30,7 +38,10 @@ class Office {
       longitude: parseDouble(json['longitude'] ?? json['lng']),
       radiusM: json['radius_m'] is num
           ? (json['radius_m'] as num).toInt()
-          : int.tryParse(json['radius_m']?.toString() ?? '15') ?? 15,
+          : (json['radiusMeters'] is num
+              ? (json['radiusMeters'] as num).toInt()
+              : int.tryParse(json['radius_m']?.toString() ?? json['radiusMeters']?.toString() ?? '15') ?? 15),
+      isActive: isActive,
     );
   }
 
@@ -42,8 +53,11 @@ class Office {
       'latitude': latitude,
       'longitude': longitude,
       'radius_m': radiusM,
+      'is_active': isActive ? 1 : 0,
     };
   }
+
+  int get radiusMeters => radiusM;
 
   String get formattedCoordinates => '$latitude, $longitude';
 }
