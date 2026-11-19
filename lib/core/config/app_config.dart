@@ -5,7 +5,7 @@ class AppConfig {
   static const bool useMock = false;
 
   /// Backend API Base URL
-  static const String baseUrl = 'http://192.168.0.125:3000/api/';
+  static const String baseUrl = 'http://192.168.0.129:3000/api/';
 
   /// Network timeouts
   static const Duration connectTimeout = Duration(seconds: 10);
