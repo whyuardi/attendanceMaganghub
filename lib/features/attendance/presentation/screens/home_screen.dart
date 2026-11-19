@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/location/location_service.dart';
 import '../../../../shared/widgets/loading_view.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/attendance.dart';
@@ -157,6 +158,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             return;
           }
         }
+      }
+
+      // Validasi lokasi dan radius mobile (maks 15 meter) sebelum membuka kamera
+      try {
+        final locationService = ref.read(locationServiceProvider);
+        final pos = await locationService.getCurrentPosition();
+        await locationService.verifyRadius(
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+        );
+      } catch (e) {
+        if (context.mounted) {
+          final msg = e.toString().replaceAll('Exception: ', '').replaceAll('ValidationError: ', '');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: AppColors.statusRed,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
       }
 
       try {

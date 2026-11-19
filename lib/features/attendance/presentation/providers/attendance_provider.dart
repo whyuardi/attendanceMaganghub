@@ -94,6 +94,9 @@ class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
         lng = pos.longitude;
       }
 
+      // Validasi radius berpatokan pada kode lokal mobile (maks 15 meter)
+      await _locationService.verifyRadius(latitude: lat, longitude: lng);
+
       final result = await _repository.checkIn(
         latitude: lat,
         longitude: lng,
@@ -168,6 +171,9 @@ class TodayAttendanceNotifier extends StateNotifier<TodayAttendanceState> {
         lat = pos.latitude;
         lng = pos.longitude;
       }
+
+      // Validasi radius berpatokan pada kode lokal mobile (maks 15 meter)
+      await _locationService.verifyRadius(latitude: lat, longitude: lng);
 
       final result = await _repository.checkOut(
         latitude: lat,
