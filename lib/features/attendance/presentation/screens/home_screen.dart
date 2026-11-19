@@ -113,6 +113,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     // Helper method to capture photo from camera and submit attendance
     Future<void> performAttendanceWithCamera(bool isCheckIn) async {
+      // Validasi waktu sebelum membuka kamera untuk absen pulang (Opsi A)
+      if (!isCheckIn) {
+        final now = DateTime.now();
+        if (now.weekday == DateTime.sunday) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Hari Minggu libur. Tidak dapat melakukan absensi.'),
+              backgroundColor: AppColors.statusRed,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+
+        if (now.weekday >= DateTime.monday && now.weekday <= DateTime.friday) {
+          if (now.hour < 17) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Belum waktunya absen pulang. Absen pulang hari Senin—Jumat baru dapat dilakukan mulai pukul 17.00 WIB.',
+                ),
+                backgroundColor: AppColors.statusRed,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            return;
+          }
+        }
+
+        if (now.weekday == DateTime.saturday) {
+          if (now.hour < 16) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Belum waktunya absen pulang. Absen pulang hari Sabtu baru dapat dilakukan mulai pukul 16.00 WIB.',
+                ),
+                backgroundColor: AppColors.statusRed,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            return;
+          }
+        }
+      }
+
       try {
         final picker = ImagePicker();
         final pickedFile = await picker.pickImage(
