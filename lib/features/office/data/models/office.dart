@@ -39,7 +39,11 @@ class Office {
     final rawIsActive = json['is_active'] ?? json['isActive'];
     final isActive = rawIsActive == null
         ? true
-        : (rawIsActive == 1 || rawIsActive == true || rawIsActive == '1');
+        : (rawIsActive == 1 ||
+              rawIsActive == true ||
+              rawIsActive == '1' ||
+              rawIsActive.toString().toLowerCase() == 'true' ||
+              rawIsActive.toString().toLowerCase() == 'active');
 
     return Office(
       id: json['id'] is int
